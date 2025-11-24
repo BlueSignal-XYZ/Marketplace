@@ -3,15 +3,14 @@ import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDIbFUYETjr9k2j1qjwV793zSSmJdjjzbc",
-    authDomain: "app-neptunechain.firebaseapp.com",
-    databaseURL: "https://app-neptunechain-default-rtdb.firebaseio.com",
-    projectId: "app-neptunechain",
-    storageBucket: "app-neptunechain.appspot.com",
-    messagingSenderId: "477231879849",
-    appId: "1:477231879849:web:90b49665fce2d4660b7bb8",
-    measurementId: "G-WN6DP7ZHWC"
-  };
+  apiKey: "AIzaSyAESUVCltG4kviQLIiiygIROJ7BKMMgvX8",
+  authDomain: "waterquality-trading.firebaseapp.com",
+  projectId: "waterquality-trading",
+  storageBucket: "waterquality-trading.firebasestorage.app",
+  messagingSenderId: "1006831487182",
+  appId: "1:1006831487182:web:a58405168a345d8728689f",
+  measurementId: "G-ECMFLV2Y6B"
+};
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

@@ -1,24 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+
 import LoginForm from "./components/welcome/LoginForm";
 import RegisterForm from "./components/welcome/RegisterForm";
 import { WelcomeHome } from "./components/welcome";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHome } from "@fortawesome/free-solid-svg-icons";
-import { useNavigate } from "react-router-dom";
-import GoogleSignIn from "./components/welcome/GoogleSignIn";
-import { contentVariants } from "./components/welcome/WelcomeHome";
-import {
-  ButtonPrimary,
-  ButtonSecondary,
-} from "../components/shared/button/Button";
-import { BackgroundImage } from "framer/render/types/BackgroundImage.js";
-import Footer from "../components/shared/Footer/Footer";
-import {useAppContext} from "../context/AppContext";
 
+import Footer from "../components/shared/Footer/Footer";
+import { useAppContext } from "../context/AppContext";
+
+// used by WelcomeHome
 export const logoImage = new URL("../assets/logo.png", import.meta.url).href;
-("./assets/");
 
 const backgroundImage = new URL(
   "../assets/wallpapers/welcome_wallpaper.jpg",
@@ -34,8 +27,6 @@ const FullScreenWrapper = styled.div`
     max-width: 400px;
     width: 90%;
     margin: 0 auto;
-    button {
-    }
 
     @media (min-width: 1024px) {
       margin: 0 0;
@@ -59,23 +50,6 @@ const FullScreenWrapper = styled.div`
     }
   }
 
-  .navbar {
-    display: flex;
-    max-width: 1200px;
-    margin: 0 auto;
-    justify-content: space-between;
-    width: 100%;
-    height: 80px;
-    align-items: center;
-    .navbar-buttons {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    img {
-      width: 180px;
-    }
-  }
   .content {
     overflow-y: hidden;
     display: flex;
@@ -85,18 +59,6 @@ const FullScreenWrapper = styled.div`
     min-height: calc(100vh - 24px);
     @media (max-width: 1024px) {
       flex-direction: column;
-    }
-  }
-
-  .content-logo img {
-    width: 120px;
-    margin-top: 40px;
-    margin-bottom: 24px;
-    display: none;
-    margin-left: 24px;
-    @media (min-width: 1024px) {
-      display: block;
-      margin-bottom: 40px;
     }
   }
 
@@ -114,10 +76,10 @@ const FullScreenWrapper = styled.div`
       height: 100%;
       width: 100%;
       padding: 24px;
+      object-fit: cover;
     }
     .section-left-image {
       overflow: hidden;
-      object-fit: cover;
       width: 100%;
     }
   }
@@ -140,10 +102,7 @@ const FullScreenWrapper = styled.div`
   }
 `;
 
-const Wallpaper = styled.div``;
-
 const StyledLogo = styled.img``;
-
 export const CardLogo = styled(StyledLogo)``;
 
 export const logoVariants = {
@@ -154,19 +113,22 @@ export const logoVariants = {
 const Welcome = () => {
   const { STATES, ACTIONS } = useAppContext();
   const navigate = useNavigate();
+
   const [cardState, setCardState] = useState("");
-  const [googleData, setGoogleData] = useState({});
+  const [googleData, setGoogleData] = useState({}); // kept for future use
   const { user } = STATES || {};
   const { updateUser } = ACTIONS || {};
 
+  // 🔁 Unified redirect: whenever user is truthy, push to marketplace
   useEffect(() => {
-    if (user) {
-      enterDash();
+    if (user?.uid) {
+      navigate("/marketplace");
     }
-  }, [navigate, user]);
+  }, [user, navigate]);
 
+  // Still pass this to forms so they behave as expected
   const enterDash = () => {
-    navigate("/dashboard/environmental");
+    navigate("/marketplace");
   };
 
   return (
@@ -180,18 +142,6 @@ const Welcome = () => {
             enterDash={enterDash}
           />
           <div className="form-elements-wrap">
-            {!user && (
-              <GoogleSignIn
-                setGoogleData={setGoogleData}
-                setCardState={setCardState}
-                enterDash={enterDash}
-              />
-            )}
-            <div className="separator">
-              <div className="separator-line"></div>
-              <div className="separator-text">Or</div>
-              <div className="separator-line"></div>
-            </div>
             <div className="form-content">
               <AnimatePresence mode="wait">
                 {cardState !== "register" && (
@@ -203,6 +153,7 @@ const Welcome = () => {
                   />
                 )}
               </AnimatePresence>
+
               {cardState === "register" && (
                 <RegisterForm
                   key="register"

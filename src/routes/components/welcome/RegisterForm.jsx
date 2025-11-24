@@ -7,12 +7,10 @@ import {
   successAnimation,
 } from "../../../assets/animations";
 import {
-  BUTTON,
   LOADING_ANIMATION,
   PROMPT_CARD,
   PROMPT_FORM,
 } from "../../../components/lib/styled";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { formVariant, loadingVariant } from "./motion_variants";
 import { Player } from "@lottiefiles/react-lottie-player";
 
@@ -27,24 +25,7 @@ import {
   ButtonLink,
   ButtonPrimary,
 } from "../../../components/shared/button/Button";
-import {AccountAPI} from "../../../scripts/back_door";
-
-const Icon = styled(FontAwesomeIcon)`
-  color: #0077b6;
-  margin-right: 10px;
-`;
-
-const Dropdown = styled.select`
-  height: ${({ theme }) => theme.formHeightMd};
-  background: ${({ theme }) => theme.colors.ui50};
-  width: 100%;
-  border: 1px solid ${({ theme }) => theme.colors.ui300};
-  border-radius: ${({ theme }) => theme.borderRadius.default};
-  padding: 0 8px;
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.ui800};
-  font-weight: 500;
-`;
+import { AccountAPI } from "../../../scripts/back_door";
 
 const RegisterForm = ({
   onSuccess,
@@ -53,67 +34,111 @@ const RegisterForm = ({
   googleData,
 }) => {
   const [username, setUsername] = useState(googleData?.name || "");
-  const [email, setEmail] = useState(googleData?.gmail || "");
+  const [email, setEmail] = useState(
+    (googleData?.gmail || googleData?.email || "").toLowerCase()
+  );
   const [password, setPassword] = useState("");
-  const [accountType, setAccountType] = useState("farmer");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
-    if (isSuccess) {
-      setTimeout(() => {
+    if (isSuccess && onSuccess) {
+      const t = setTimeout(() => {
         onSuccess();
       }, 2000);
+      return () => clearTimeout(t);
     }
-  }, [isSuccess]);
+  }, [isSuccess, onSuccess]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+
+    const trimmedUsername = (username || "").trim();
+    const trimmedEmail = (email || "").trim().toLowerCase();
+
+    if (!trimmedUsername) {
+      setError("Please choose a username.");
+      return;
+    }
+    if (!trimmedEmail) {
+      setError("Please enter an email address.");
+      return;
+    }
+    if (!password || password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       let newUser = null;
-      if (googleData?.gmail) {
+
+      // Keep Google path future-proofed, even though we disabled it in the UI for now
+      if (googleData?.gmail || googleData?.email) {
+        const googleEmail =
+          (googleData.gmail || googleData.email || "").toLowerCase();
         newUser = {
           uid: googleData.uid,
-          username: username.toLowerCase(),
-          email: googleData.gmail,
-          role: accountType,
-          PIN: 123456
+          username: trimmedUsername.toLowerCase(),
+          email: googleEmail,
+          role: "farmer",
+          PIN: 123456,
         };
       } else {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
-          email,
+          trimmedEmail,
           password
         );
         const userData = userCredential.user;
 
         newUser = {
           uid: userData.uid,
-          username: username.toLowerCase(),
-          email: userData.email.toLowerCase(),
-          role: accountType,
-          PIN: 123456
+          username: trimmedUsername.toLowerCase(),
+          email: (userData.email || trimmedEmail).toLowerCase(),
+          role: "farmer",
+          PIN: 123456,
         };
       }
 
-      /**
-       * create account /account/create
-       * use password as pin
-       */
+      console.log("RegisterForm → newUser:", newUser);
 
-      
-      console.log({newUser})
-      if ((await AccountAPI.create(newUser))?.result) {
-        setIsSuccess(Boolean(await updateUser?.(null,newUser)));
-        console.log({Logged: newUser})
-      } else {
-        alert("Not Created")
+      // 🔹 Best-effort backend account creation — NO alert if it fails
+      try {
+        const apiResult = await AccountAPI.create(newUser);
+        console.log("AccountAPI.create →", apiResult);
+      } catch (err) {
+        console.warn("AccountAPI.create failed (non-fatal):", err);
       }
+
+      // Keep local user state in sync
+      let updatedOK = false;
+      if (updateUser) {
+        updatedOK = !!(await updateUser(null, newUser));
+      }
+      if (!updatedOK) {
+        try {
+          sessionStorage.setItem("user", JSON.stringify(newUser));
+        } catch (e) {
+          console.error("Failed to write sessionStorage user:", e);
+        }
+      }
+
+      setIsSuccess(true);
     } catch (error) {
-      setError(error.message);
+      console.error("Registration error:", error);
+      if (error.code === "auth/email-already-in-use") {
+        setError("An account with this email already exists.");
+      } else if (error.code === "auth/invalid-email") {
+        setError("Please enter a valid email address.");
+      } else if (error.code === "auth/weak-password") {
+        setError("Password is too weak. Use at least 8 characters.");
+      } else {
+        setError(error.message || "Failed to create account. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -150,6 +175,7 @@ const RegisterForm = ({
               <Input
                 type="text"
                 value={username}
+                placeholder="Choose a username"
                 onChange={(e) => setUsername(e.target.value)}
                 required
               />
@@ -159,35 +185,26 @@ const RegisterForm = ({
               <Input
                 type="email"
                 value={email}
+                placeholder="you@example.com"
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </FormSection>
 
-            <FormSection label={"Password"}>
+            <FormSection label="Password">
               <Input
                 type="password"
                 value={password}
+                placeholder="Create a password (min 8 chars)"
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </FormSection>
 
-            <FormSection label={"Account type"}>
-              <Dropdown
-                value={accountType}
-                onChange={(e) => setAccountType(e.target.value)}
-                required
-              >
-                <option value="farmer">Farmer</option>
-                <option value="distributor">Distributor</option>
-                <option value="retailer">Retailer</option>
-              </Dropdown>
-            </FormSection>
-
             <ButtonPrimary className="register-button" type="submit">
               Register
             </ButtonPrimary>
+
             <div>
               <ButtonLink type="button" onClick={onSwitchToLogin}>
                 Already have an account? Log in
