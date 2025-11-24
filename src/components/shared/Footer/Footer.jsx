@@ -1,3 +1,4 @@
+// /workspaces/Marketplace/src/components/shared/Footer/Footer.jsx
 import React from "react";
 import styled from "styled-components";
 import { APP_NAME } from "../../../constants/constants";
@@ -11,7 +12,9 @@ const StyledFooter = styled.footer`
     display: flex;
     justify-content: space-between;
     text-align: left;
+    gap: 80px; /* large horizontal gap between left + right */
   }
+
   .rights-reserved {
     color: ${({ theme }) => theme.colors.ui600};
     font-size: 12px;
@@ -23,6 +26,10 @@ const StyledFooter = styled.footer`
     justify-content: center;
     align-items: center;
     gap: 16px;
+  }
+
+  .footer-spacer {
+    flex: 1;
   }
 
   a {
@@ -38,6 +45,10 @@ function Footer() {
       <span className="rights-reserved">
         © 2024 WaterQuality.Trading — powered by BlueSignal LTD
       </span>
+
+      {/* spacer pushes Terms/Privacy to the right on desktop */}
+      <div className="footer-spacer" />
+
       <div className="button-wrap">
         <a
           rel="noreferrer"
