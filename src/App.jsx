@@ -100,10 +100,61 @@ function AppShell({ mode, user }) {
   const toggleCloudMenu = () => setCloudMenuOpen((prev) => !prev);
   const toggleMarketMenu = () => setMarketMenuOpen((prev) => !prev);
 
+  // Close menus on route change
   React.useEffect(() => {
     setCloudMenuOpen(false);
     setMarketMenuOpen(false);
   }, [location.pathname]);
+
+  // Dynamic page title by mode + route
+  React.useEffect(() => {
+    const path = location.pathname || "/";
+    let title = "";
+
+    if (mode === "cloud") {
+      // Base
+      title = "BlueSignal Cloud Monitoring";
+
+      if (path === "/") {
+        title = "Sign in — BlueSignal Cloud Monitoring";
+      } else if (path.startsWith("/dashboard")) {
+        title = "Dashboard — BlueSignal Cloud Monitoring";
+      } else if (path.includes("nutrient-calculator")) {
+        title = "Nutrient Calculator — BlueSignal Cloud Monitoring";
+      } else if (path.includes("verification")) {
+        title = "Verification — BlueSignal Cloud Monitoring";
+      } else if (
+        path.includes("upload-media") ||
+        path.includes("stream") ||
+        path.startsWith("/media")
+      ) {
+        title = "Media — BlueSignal Cloud Monitoring";
+      }
+    } else {
+      // Marketplace side
+      title = "WaterQuality.Trading Marketplace";
+
+      if (path === "/") {
+        title = "Sign in — WaterQuality.Trading";
+      } else if (path.startsWith("/marketplace/seller-dashboard")) {
+        title = "Seller Dashboard — WaterQuality.Trading";
+      } else if (path.startsWith("/dashboard/financial")) {
+        title = "Financial Dashboard — WaterQuality.Trading";
+      } else if (path.startsWith("/registry")) {
+        title = "Registry — WaterQuality.Trading";
+      } else if (path.startsWith("/recent-removals")) {
+        title = "Recent Removals — WaterQuality.Trading";
+      } else if (path.startsWith("/certificate")) {
+        title = "Certificate Viewer — WaterQuality.Trading";
+      } else if (path.startsWith("/map")) {
+        title = "Watershed Map — WaterQuality.Trading";
+      } else if (path.startsWith("/presale")) {
+        title = "Presale — WaterQuality.Trading";
+      }
+    }
+
+    document.title = title;
+  }, [location.pathname, mode]);
 
   const isAuthLanding = location.pathname === "/";
 
@@ -118,7 +169,7 @@ function AppShell({ mode, user }) {
         <MarketplaceHeader onMenuClick={toggleMarketMenu} />
       )}
 
-      {/* Global popups / settings (no Sidebar in cloud mode anymore) */}
+      {/* Global popups / settings */}
       <Popups />
 
       {/* Menus */}
@@ -196,10 +247,7 @@ const CloudRoutes = ({ user }) => (
           element={<NutrientCalculator />}
         />
 
-        <Route
-          path="/features/verification"
-          element={<VerificationUI />}
-        />
+        <Route path="/features/verification" element={<VerificationUI />} />
 
         <Route path="/features/stream" element={<Livepeer />} />
         <Route path="/features/upload-media" element={<Livepeer />} />
@@ -235,10 +283,7 @@ const MarketplaceRoutes = ({ user }) => (
     )}
 
     <Route path="/marketplace" element={<Marketplace />} />
-    <Route
-      path="/marketplace/listing/:id"
-      element={<ListingPage />}
-    />
+    <Route path="/marketplace/listing/:id" element={<ListingPage />} />
     <Route path="/recent-removals" element={<RecentRemoval />} />
     <Route path="/certificate/:id" element={<CertificatePage />} />
     <Route path="/registry" element={<Registry />} />
