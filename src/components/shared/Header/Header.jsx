@@ -62,6 +62,20 @@ const MenuButton = styled.button`
 `;
 
 export default function Header({ onMenuClick }) {
+  // Hide this legacy header on the WaterQuality.Trading domains.
+  // We only want the new top header there.
+  const host =
+    typeof window !== "undefined" ? window.location.hostname : "";
+
+  if (
+    host === "waterquality.trading" ||
+    host === "waterquality-trading.web.app" ||
+    host.endsWith(".waterquality.trading")
+  ) {
+    return null;
+  }
+
+  // On any other host (old envs, dev, etc) this header still works.
   return (
     <HeaderOuter>
       <HeaderInner>

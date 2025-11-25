@@ -60,11 +60,24 @@ function App() {
 
   let mode = "marketplace"; // default
 
-  if (host.includes("cloud.bluesignal.xyz")) {
+  // Cloud domain → cloud app
+  if (
+    host === "cloud.bluesignal.xyz" ||
+    host.endsWith(".cloud.bluesignal.xyz")
+  ) {
     mode = "cloud";
-  } else if (host.includes("waterquality.trading")) {
+  }
+
+  // Marketplace domain → marketplace app
+  else if (
+    host === "waterquality.trading" ||
+    host.endsWith(".waterquality.trading")
+  ) {
     mode = "marketplace";
-  } else {
+  }
+
+  // Local / dev overrides via ?app=
+  else {
     const appParam = params.get("app");
     if (appParam === "cloud" || appParam === "marketplace") {
       mode = appParam;
@@ -84,7 +97,7 @@ function App() {
 function AppShell({ mode, user }) {
   const location = useLocation();
 
-  // Cloud + Marketplace menu toggles (header burger) – ready for menus later
+  // Cloud + Marketplace menu toggles (header burger) – reserved for future menus
   const [cloudMenuOpen, setCloudMenuOpen] = React.useState(false);
   const [marketMenuOpen, setMarketMenuOpen] = React.useState(false);
 
@@ -112,7 +125,7 @@ function AppShell({ mode, user }) {
         <MarketplaceHeader onMenuClick={toggleMarketMenu} />
       )}
 
-      {/* Pass mode into Popups so Sidebar can be gated */}
+      {/* Popups + sidebars, gated by mode */}
       <Popups mode={mode} />
 
       {/* Global navbar is intentionally disabled for now */}
