@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:wqt": "VITE_APP_TITLE='WaterQuality.Trading' VITE_APP_DESCRIPTION='WaterQuality.Trading is a marketplace for verified water-quality improvements — starting with nutrients, with stormwater and other markets to follow.' VITE_OG_DESCRIPTION='Trade verified water-quality improvements with WaterQuality.Trading.' VITE_OG_IMAGE='/WQT-ss.png?v=4' VITE_OG_URL='https://waterquality.trading' vite build --outDir dist-wqt",
+    "build:cloud": "VITE_APP_TITLE='BlueSignal Cloud Monitoring' VITE_APP_DESCRIPTION='BlueSignal Cloud Monitoring — unified water quality, soil, buoy, and algae device monitoring.' VITE_OG_DESCRIPTION='Monitor water quality sensors, buoys, soil probes, and algae emitters in real time.' VITE_OG_IMAGE='/BS-ss.png?v=2' VITE_OG_URL='https://cloud.bluesignal.xyz' vite build --outDir dist-cloud"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.4.2",
