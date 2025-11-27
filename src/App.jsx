@@ -65,15 +65,20 @@ function App() {
 
   let mode = "marketplace";
 
+  // Cloud domain
   if (host === "cloud.bluesignal.xyz" || host.endsWith(".cloud.bluesignal.xyz")) {
     mode = "cloud";
-  } else if (
+  }
+  // Marketplace domain
+  else if (
     host === "waterquality.trading" ||
     host === "waterquality-trading.web.app" ||
     host.endsWith(".waterquality.trading")
   ) {
     mode = "marketplace";
-  } else {
+  }
+  // Local override (?app=cloud|marketplace)
+  else {
     const appParam = params.get("app");
     if (appParam === "cloud" || appParam === "marketplace") {
       mode = appParam;
@@ -100,70 +105,39 @@ function AppShell({ mode, user }) {
   const toggleCloudMenu = () => setCloudMenuOpen((prev) => !prev);
   const toggleMarketMenu = () => setMarketMenuOpen((prev) => !prev);
 
+  // Close any drawer on route change
   React.useEffect(() => {
     setCloudMenuOpen(false);
     setMarketMenuOpen(false);
   }, [location.pathname]);
 
-  // ---------- DYNAMIC TITLE ----------
+  // Titles only (OG/meta left to static HTML)
   React.useEffect(() => {
-    const host = window.location.hostname;
-    const path = location.pathname;
-
-    if (host.includes("cloud.bluesignal.xyz")) {
-      // Cloud app
-      if (path.startsWith("/dashboard")) {
-        document.title = "BlueSignal Cloud Monitoring – Dashboard";
-      } else if (path.startsWith("/features/nutrient-calculator")) {
-        document.title = "BlueSignal Cloud – Nutrient Calculator";
-      } else if (path.startsWith("/features/verification")) {
-        document.title = "BlueSignal Cloud – Verification";
-      } else {
-        document.title = "BlueSignal Cloud Monitoring";
-      }
-    } else if (
-      host.includes("waterquality.trading") ||
-      host.includes("waterquality-trading.web.app")
-    ) {
-      // Marketplace app
-      if (path.startsWith("/marketplace/seller-dashboard")) {
-        document.title = "WaterQuality.Trading – Seller Dashboard";
-      } else if (path.startsWith("/dashboard/financial")) {
-        document.title = "WaterQuality.Trading – Financial Dashboard";
-      } else if (path.startsWith("/marketplace")) {
-        document.title = "WaterQuality.Trading – Marketplace";
-      } else if (path.startsWith("/registry")) {
-        document.title = "WaterQuality.Trading – Registry";
-      } else {
-        document.title = "WaterQuality.Trading";
-      }
+    if (mode === "cloud") {
+      document.title = "BlueSignal Cloud Monitoring";
     } else {
-      // Fallback (local dev / other)
-      document.title = "Water Quality & Monitoring";
+      document.title = "WaterQuality.Trading – Marketplace";
     }
-  }, [location.pathname]);
-  // -----------------------------------
+  }, [mode, location.pathname]);
 
   const isAuthLanding = location.pathname === "/";
-  const isLoggedIn = !!user?.uid;
-  const showAppChrome = isLoggedIn && !isAuthLanding;
 
   return (
     <AppContainer>
-      {/* Headers only after login and off "/" */}
-      {showAppChrome && mode === "cloud" && (
+      {/* Headers only when not on "/" */}
+      {!isAuthLanding && mode === "cloud" && (
         <CloudHeader onMenuClick={toggleCloudMenu} />
       )}
 
-      {showAppChrome && mode === "marketplace" && (
+      {!isAuthLanding && mode === "marketplace" && (
         <MarketplaceHeader onMenuClick={toggleMarketMenu} />
       )}
 
-      {/* Global popups / settings only after login */}
-      <Popups show={showAppChrome} />
+      {/* Global popups / settings (no Sidebar here) */}
+      <Popups />
 
-      {/* Menus only after login */}
-      {showAppChrome && mode === "marketplace" && (
+      {/* Menus: ONLY render if open === true */}
+      {mode === "marketplace" && marketMenuOpen && (
         <MarketplaceMenu
           open={marketMenuOpen}
           onClose={() => setMarketMenuOpen(false)}
@@ -171,7 +145,7 @@ function AppShell({ mode, user }) {
         />
       )}
 
-      {showAppChrome && mode === "cloud" && (
+      {mode === "cloud" && cloudMenuOpen && (
         <CloudMenu
           open={cloudMenuOpen}
           onClose={() => setCloudMenuOpen(false)}
@@ -186,7 +160,7 @@ function AppShell({ mode, user }) {
         <MarketplaceRoutes user={user} />
       )}
 
-      {isLoggedIn && <LinkBadgePortal />}
+      {user?.uid && <LinkBadgePortal />}
     </AppContainer>
   );
 }
@@ -294,19 +268,15 @@ const MarketplaceRoutes = ({ user }) => (
 /*                              GLOBAL POPUPS                                 */
 /* -------------------------------------------------------------------------- */
 
-const Popups = ({ show }) => {
-  if (!show) return null;
-
-  return (
-    <>
-      <Notification />
-      <Confirmation />
-      <ResultPopup />
-      <NotificationBar />
-      <SettingsMenu />
-    </>
-  );
-};
+const Popups = () => (
+  <>
+    <Notification />
+    <Confirmation />
+    <ResultPopup />
+    <NotificationBar />
+    <SettingsMenu />
+  </>
+);
 
 /* -------------------------------------------------------------------------- */
 /*                               APP WRAPPER                                  */
