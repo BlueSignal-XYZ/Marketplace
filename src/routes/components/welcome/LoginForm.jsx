@@ -1,3 +1,4 @@
+// /src/routes/components/welcome/LoginForm.jsx
 import React, { useState } from "react";
 import styled from "styled-components";
 import {
@@ -7,15 +8,9 @@ import {
 import { useNavigate } from "react-router-dom";
 import { auth } from "../../../apis/firebase";
 
-import successAnimation from "../../../assets/animations/success-animation.json";
-import environmentalRotation from "../../../assets/animations/environmental-friendly-animation.json";
 import Notification from "../../../components/popups/NotificationPopup";
-import {
-  LOADING_ANIMATION,
-  PROMPT_CARD,
-  PROMPT_FORM,
-} from "../../../components/lib/styled";
-import { formVariant, loadingVariant } from "./motion_variants";
+import { PROMPT_CARD, PROMPT_FORM } from "../../../components/lib/styled";
+import { formVariant } from "./motion_variants";
 import FormSection from "../../../components/shared/FormSection/FormSection";
 import { Input } from "../../../components/shared/input/Input";
 import {
@@ -25,193 +20,224 @@ import {
 } from "../../../components/shared/button/Button";
 import { useAppContext } from "../../../context/AppContext";
 
-function isValidEmail(email) {
-  const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-  return regex.test(email);
-}
+/* -------------------------------------------------------------------------- */
+/*                               STYLED WRAPPERS                               */
+/* -------------------------------------------------------------------------- */
 
-const StyledLoginForm = styled.div`
-  .input-section {
+const Card = styled(PROMPT_CARD)`
+  max-width: 420px;
+  margin: 0 auto;
+`;
+
+const Form = styled(PROMPT_FORM)`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const Header = styled.div`
+  margin-bottom: 12px;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors?.ui900 || "#0f172a"};
   }
 
-  ${ButtonPrimary} {
-    margin-top: 40px;
-    width: 100%;
+  p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: ${({ theme }) => theme.colors?.ui600 || "#4b5563"};
   }
+`;
 
-  ${ButtonSecondary} {
-    width: 100%;
-  }
+const ActionsRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
 
-  .secondary-actions {
-    .secondary-action-text {
-      font-weight: 500;
-      font-size: 14px;
-      color: ${({ theme }) => theme.colors.ui600};
+  @media (max-width: 480px) {
+    flex-direction: column;
+
+    ${ButtonPrimary}, ${ButtonSecondary} {
+      width: 100%;
     }
   }
 `;
 
-const LoginForm = ({ onSuccess, onSwitchToRegister, updateUser }) => {
+const FooterRow = styled.div`
+  margin-top: 12px;
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors?.ui600 || "#4b5563"};
+
+  a {
+    color: ${({ theme }) => theme.colors?.primary700 || "#0369a1"};
+    text-decoration: underline;
+    cursor: pointer;
+  }
+`;
+
+/* -------------------------------------------------------------------------- */
+/*                               HELPER FUNCTIONS                              */
+/* -------------------------------------------------------------------------- */
+
+function isValidEmail(email) {
+  const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return regex.test(String(email).toLowerCase());
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                 LOGIN FORM                                  */
+/* -------------------------------------------------------------------------- */
+
+const LoginForm = () => {
   const { ACTIONS } = useAppContext();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const { logNotification } = ACTIONS || {};
 
-  const handleSubmit = async (e) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const handleError = (message) => {
+    console.error("Login error:", message);
+    setNotification({
+      type: "error",
+      message,
+    });
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
+
+    if (!email || !password) {
+      handleError("Please enter both email and password.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      handleError("Please enter a valid email address.");
+      return;
+    }
 
     try {
-      // 1) Firebase auth
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const firebaseUser = userCredential.user;
+      setSubmitting(true);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const user = result.user;
 
-      if (!firebaseUser) {
-        setError("Login failed: no user returned from Firebase.");
-        return;
-      }
+      ACTIONS?.setUser?.(user);
 
-      // 2) Fallback user object into AppContext (bypasses backend if it's down)
-      const fallbackUser = {
-        uid: firebaseUser.uid,
-        username: firebaseUser.email
-          ? firebaseUser.email.split("@")[0].toLowerCase()
-          : "user",
-        email: firebaseUser.email?.toLowerCase() || "",
-        role: "farmer",
-        PIN: 123456,
-      };
-
-      if (updateUser) {
-        await updateUser(null, fallbackUser);
-      }
-
-      // 3) Let the router lander decide where to go:
-      //    - On marketplace host → MarketplaceLanding redirects to /marketplace
-      //    - On cloud host       → CloudLanding redirects to /dashboard/main
-      navigate("/", { replace: true });
-
-      if (onSuccess) onSuccess();
-      setIsSuccess(true);
+      // Let MarketplaceLanding handle redirect, but push a hint
+      setTimeout(() => {
+        navigate("/marketplace", { replace: true });
+      }, 600);
     } catch (err) {
-      console.error("Login error:", err);
-      setError(err.message || "Login failed. Please try again.");
+      console.error(err);
+      handleError(err?.message || "Unable to sign in. Please try again.");
     } finally {
-      setIsLoading(false);
+      setSubmitting(false);
     }
   };
 
   const handleResetPassword = async () => {
-    if (isValidEmail(email)) {
-      try {
-        await sendPasswordResetEmail(auth, email);
-        logNotification &&
-          logNotification("alert", `Password reset email sent to ${email}!`);
-      } catch (error) {
-        console.error("Reset password error:", error);
-        setError(`Error sending password reset email: ${error.message}`);
-        logNotification &&
-          logNotification("error", "Error sending password reset email");
-      }
-    } else {
-      logNotification && logNotification("error", "Please enter a valid email");
+    if (!email) {
+      handleError("Enter your email first to receive a reset link.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      handleError("Please enter a valid email address.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await sendPasswordResetEmail(auth, email);
+      setNotification({
+        type: "success",
+        message: "Password reset link sent. Check your inbox.",
+      });
+    } catch (err) {
+      console.error(err);
+      handleError(err?.message || "Unable to send reset link.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <StyledLoginForm>
-      <Notification type="error" message={error} />
+    <>
+      <Card
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        variants={formVariant}
+      >
+        <FormSection>
+          <Header>
+            <h2>Sign in to continue</h2>
+            <p>Access your marketplace tools, dashboards, and projects.</p>
+          </Header>
 
-      <PROMPT_CARD>
-        {isLoading ? (
-          <LOADING_ANIMATION
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            variants={loadingVariant}
-          >
-            <Player
-              autoplay
-              loop
-              src={environmentalRotation}
-              style={{ height: 100, width: 100 }}
+          <Form onSubmit={handleLogin}>
+            <Input
+              type="email"
+              label="Email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={submitting}
+              required
             />
-          </LOADING_ANIMATION>
-        ) : !isSuccess ? (
-          <PROMPT_FORM
-            variants={formVariant}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            onSubmit={handleSubmit}
-          >
-            <div className="input-section">
-              <FormSection label={"Email"}>
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </FormSection>
-            </div>
-            <div className="input-section">
-              <FormSection label={"Password"}>
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </FormSection>
-            </div>
-            <div className="button-area">
-              <ButtonPrimary type="submit">Log In</ButtonPrimary>
-            </div>
-            <div className="secondary-actions">
-              <div className="secondary-action-text">
-                <ButtonLink type="button" onClick={handleResetPassword}>
-                  Forgot Password?
-                </ButtonLink>
-              </div>
-              <div className="secondary-action-text">
-                Need an account?{" "}
-                <ButtonLink type="button" onClick={onSwitchToRegister}>
-                  Register
-                </ButtonLink>
-              </div>
-            </div>
-          </PROMPT_FORM>
-        ) : (
-          <LOADING_ANIMATION
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            variants={loadingVariant}
-          >
-            <Player
-              autoplay
-              loop
-              src={successAnimation}
-              style={{ height: 100, width: 100 }}
+
+            <Input
+              type="password"
+              label="Password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={submitting}
+              required
             />
-          </LOADING_ANIMATION>
-        )}
-      </PROMPT_CARD>
-    </StyledLoginForm>
+
+            <ActionsRow>
+              <ButtonPrimary type="submit" disabled={submitting}>
+                {submitting ? "Signing in..." : "Sign in"}
+              </ButtonPrimary>
+
+              <ButtonSecondary
+                type="button"
+                onClick={handleResetPassword}
+                disabled={submitting}
+              >
+                Reset password
+              </ButtonSecondary>
+            </ActionsRow>
+          </Form>
+
+          <FooterRow>
+            Need an account?{" "}
+            <ButtonLink
+              type="button"
+              onClick={() => navigate("/?mode=register")}
+            >
+              Create one here.
+            </ButtonLink>
+          </FooterRow>
+        </FormSection>
+      </Card>
+
+      {notification && (
+        <Notification
+          type={notification.type}
+          message={notification.message}
+          onClose={() => setNotification(null)}
+        />
+      )}
+    </>
   );
 };
 

@@ -129,7 +129,10 @@ export function MarketplaceMenu({ open, onClose, user }) {
     }
   };
 
-  const isActive = (path) => location.pathname === path;
+  // Treat nav as active for exact path or nested routes under it
+  const isActive = (path) =>
+    location.pathname === path ||
+    location.pathname.startsWith(path + "/");
 
   return (
     <>
@@ -171,11 +174,7 @@ export function MarketplaceMenu({ open, onClose, user }) {
           >
             Registry
           </NavItem>
-          <NavItem
-            to="/map"
-            $active={isActive("/map")}
-            onClick={onClose}
-          >
+          <NavItem to="/map" $active={isActive("/map")} onClick={onClose}>
             Map
           </NavItem>
           <NavItem
@@ -189,6 +188,38 @@ export function MarketplaceMenu({ open, onClose, user }) {
 
         {user?.uid && (
           <>
+            <SectionLabel>Tools</SectionLabel>
+            <NavList>
+              <NavItem
+                to="/marketplace/tools/calculator"
+                $active={isActive("/marketplace/tools/calculator")}
+                onClick={onClose}
+              >
+                Nutrient Calculator
+              </NavItem>
+              <NavItem
+                to="/marketplace/tools/live"
+                $active={isActive("/marketplace/tools/live")}
+                onClick={onClose}
+              >
+                Live Stream
+              </NavItem>
+              <NavItem
+                to="/marketplace/tools/upload"
+                $active={isActive("/marketplace/tools/upload")}
+                onClick={onClose}
+              >
+                Upload Media
+              </NavItem>
+              <NavItem
+                to="/marketplace/tools/verification"
+                $active={isActive("/marketplace/tools/verification")}
+                onClick={onClose}
+              >
+                Verification
+              </NavItem>
+            </NavList>
+
             <SectionLabel>Account</SectionLabel>
             <NavList>
               <NavItem

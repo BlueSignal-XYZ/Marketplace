@@ -1,6 +1,15 @@
 import axios from "axios";
 import configs from "../../configs";
 
+// Lightweight process polyfill for browser
+if (typeof window !== "undefined" && typeof window.process === "undefined") {
+  window.process = {
+    env: {
+      NODE_ENV: "production",
+    },
+  };
+}
+
 /*************************ACCOUNT_ENDPOINTS************************************* */
 const createAccount = async (userdata) =>
   (await axios.post(`${configs.server_url}/account/create`, userdata))?.data;

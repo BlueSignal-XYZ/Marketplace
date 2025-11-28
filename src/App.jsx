@@ -59,7 +59,8 @@ import DashboardMain from "./components/cloud/DashboardMain";
 /* -------------------------------------------------------------------------- */
 /*                              DEBUG VERSION TAG                              */
 /* -------------------------------------------------------------------------- */
-const BUILD_VERSION = "2025-11-28-02";
+
+const BUILD_VERSION = "2025-11-28-03";
 console.log("🔥 BUILD VERSION:", BUILD_VERSION);
 
 /* -------------------------------------------------------------------------- */
@@ -74,9 +75,7 @@ function App() {
   const params = new URLSearchParams(window.location.search);
   let mode = "marketplace";
 
-  // -----------------------------------------------------------------------
   // MODE DETECTION (Marketplace vs Cloud)
-  // -----------------------------------------------------------------------
   if (
     host === "cloud.bluesignal.xyz" ||
     host.endsWith(".cloud.bluesignal.xyz") ||
@@ -143,8 +142,7 @@ function AppShell({ mode, user }) {
 
   return (
     <AppContainer>
-
-      {/* ------------------------ DEBUG VERSION LABEL ------------------------ */}
+      {/* DEBUG VERSION LABEL */}
       <div
         style={{
           position: "fixed",
@@ -162,7 +160,7 @@ function AppShell({ mode, user }) {
         v{BUILD_VERSION}
       </div>
 
-      {/* ------------------------------ HEADERS ------------------------------ */}
+      {/* HEADERS */}
       {!isAuthLanding && mode === "cloud" && (
         <CloudHeader onMenuClick={toggleCloudMenu} />
       )}
@@ -171,10 +169,10 @@ function AppShell({ mode, user }) {
         <MarketplaceHeader onMenuClick={toggleMarketMenu} />
       )}
 
-      {/* ------------------------------ POPUPS ------------------------------- */}
+      {/* GLOBAL POPUPS */}
       <Popups />
 
-      {/* ------------------------------- MENUS ------------------------------- */}
+      {/* MENUS */}
       {mode === "marketplace" && (
         <MarketplaceMenu
           open={marketMenuOpen}
@@ -191,21 +189,21 @@ function AppShell({ mode, user }) {
         />
       )}
 
-      {/* ------------------------------ ROUTES ------------------------------ */}
+      {/* ROUTES */}
       {mode === "cloud" ? (
         <CloudRoutes user={user} />
       ) : (
         <MarketplaceRoutes user={user} />
       )}
 
-      {/* -------------------------- BOTTOM BADGE ---------------------------- */}
+      {/* BOTTOM BADGE */}
       {user?.uid && <LinkBadgePortal />}
     </AppContainer>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/*                            LANDING REDIRECTS                                */
+/*                            LANDING REDIRECTS                               */
 /* -------------------------------------------------------------------------- */
 
 const CloudLanding = ({ user }) => {
@@ -215,7 +213,7 @@ const CloudLanding = ({ user }) => {
     if (user?.uid) {
       navigate("/dashboard/main", { replace: true });
     }
-  }, [user]);
+  }, [user, navigate]);
 
   return <Welcome />;
 };
@@ -227,7 +225,7 @@ const MarketplaceLanding = ({ user }) => {
     if (user?.uid) {
       navigate("/marketplace", { replace: true });
     }
-  }, [user]);
+  }, [user, navigate]);
 
   return <Welcome />;
 };
@@ -244,7 +242,10 @@ const CloudRoutes = ({ user }) => (
       <>
         <Route path="/dashboard/:dashID" element={<Home />} />
         <Route path="/dashboard/main" element={<DashboardMain />} />
-        <Route path="/features/nutrient-calculator" element={<NutrientCalculator />} />
+        <Route
+          path="/features/nutrient-calculator"
+          element={<NutrientCalculator />}
+        />
         <Route path="/features/verification" element={<VerificationUI />} />
         <Route path="/features/stream" element={<Livepeer />} />
         <Route path="/features/upload-media" element={<Livepeer />} />
@@ -266,13 +267,7 @@ const MarketplaceRoutes = ({ user }) => (
   <Routes>
     <Route path="/" element={<MarketplaceLanding user={user} />} />
 
-    {user?.uid && (
-      <>
-        <Route path="/marketplace/seller-dashboard" element={<SellerDashboard />} />
-        <Route path="/dashboard/financial" element={<FinancialDashboard />} />
-      </>
-    )}
-
+    {/* Public marketplace explore routes */}
     <Route path="/marketplace" element={<Marketplace />} />
     <Route path="/marketplace/listing/:id" element={<ListingPage />} />
     <Route path="/recent-removals" element={<RecentRemoval />} />
@@ -280,6 +275,40 @@ const MarketplaceRoutes = ({ user }) => (
     <Route path="/registry" element={<Registry />} />
     <Route path="/map" element={<Map />} />
     <Route path="/presale" element={<Presale />} />
+
+    {/* Auth-gated marketplace tools + account */}
+    {user?.uid && (
+      <>
+        {/* Tools */}
+        <Route
+          path="/marketplace/tools/calculator"
+          element={<NutrientCalculator />}
+        />
+        <Route
+          path="/marketplace/tools/live"
+          element={<Livepeer />}
+        />
+        <Route
+          path="/marketplace/tools/upload"
+          element={<Livepeer />} // placeholder for upload tool
+        />
+        <Route
+          path="/marketplace/tools/verification"
+          element={<VerificationUI />}
+        />
+
+        {/* Account */}
+        <Route
+          path="/marketplace/seller-dashboard"
+          element={<SellerDashboard />}
+        />
+        <Route
+          path="/dashboard/financial"
+          element={<FinancialDashboard />}
+        />
+      </>
+    )}
+
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
