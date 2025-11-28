@@ -7,6 +7,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { auth } from "../../../apis/firebase";
 
+import successAnimation from "../../../assets/animations/success-animation.json";
+import environmentalRotation from "../../../assets/animations/environmental-friendly-animation.json";
 import Notification from "../../../components/popups/NotificationPopup";
 import {
   LOADING_ANIMATION,
@@ -50,31 +52,6 @@ const StyledLoginForm = styled.div`
   }
 `;
 
-// Match App.jsx mode detection
-function detectModeFromLocation() {
-  const host = window.location.hostname;
-  const params = new URLSearchParams(window.location.search);
-
-  if (host === "cloud.bluesignal.xyz" || host.endsWith(".cloud.bluesignal.xyz")) {
-    return "cloud";
-  }
-
-  if (
-    host === "waterquality.trading" ||
-    host === "waterquality-trading.web.app" ||
-    host.endsWith(".waterquality.trading")
-  ) {
-    return "marketplace";
-  }
-
-  const appParam = params.get("app");
-  if (appParam === "cloud" || appParam === "marketplace") {
-    return appParam;
-  }
-
-  return "marketplace";
-}
-
 const LoginForm = ({ onSuccess, onSwitchToRegister, updateUser }) => {
   const { ACTIONS } = useAppContext();
   const navigate = useNavigate();
@@ -92,6 +69,7 @@ const LoginForm = ({ onSuccess, onSwitchToRegister, updateUser }) => {
     setError("");
 
     try {
+      // 1) Firebase auth
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
@@ -104,7 +82,7 @@ const LoginForm = ({ onSuccess, onSwitchToRegister, updateUser }) => {
         return;
       }
 
-      // Fallback user object for app state
+      // 2) Fallback user object into AppContext (bypasses backend if it's down)
       const fallbackUser = {
         uid: firebaseUser.uid,
         username: firebaseUser.email
@@ -115,27 +93,17 @@ const LoginForm = ({ onSuccess, onSwitchToRegister, updateUser }) => {
         PIN: 123456,
       };
 
-      // 🔹 Safely call updateUser (no crash even if signature differs)
-      if (typeof updateUser === "function") {
-        try {
-          await updateUser(firebaseUser, fallbackUser);
-        } catch (err) {
-          console.error("updateUser failed:", err);
-          // Don't set error here; we still have a valid firebaseUser,
-          // and AppContext auth listener should pick it up on its own.
-        }
+      if (updateUser) {
+        await updateUser(null, fallbackUser);
       }
 
+      // 3) Let the router lander decide where to go:
+      //    - On marketplace host → MarketplaceLanding redirects to /marketplace
+      //    - On cloud host       → CloudLanding redirects to /dashboard/main
+      navigate("/", { replace: true });
+
+      if (onSuccess) onSuccess();
       setIsSuccess(true);
-
-      const mode = detectModeFromLocation();
-      if (mode === "cloud") {
-        navigate("/dashboard/main", { replace: true });
-      } else {
-        navigate("/marketplace", { replace: true });
-      }
-
-      onSuccess && onSuccess();
     } catch (err) {
       console.error("Login error:", err);
       setError(err.message || "Login failed. Please try again.");
@@ -173,16 +141,12 @@ const LoginForm = ({ onSuccess, onSwitchToRegister, updateUser }) => {
             exit="exit"
             variants={loadingVariant}
           >
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: "#4b5563",
-                textAlign: "center",
-              }}
-            >
-              Logging in...
-            </div>
+            <Player
+              autoplay
+              loop
+              src={environmentalRotation}
+              style={{ height: 100, width: 100 }}
+            />
           </LOADING_ANIMATION>
         ) : !isSuccess ? (
           <PROMPT_FORM
@@ -238,16 +202,12 @@ const LoginForm = ({ onSuccess, onSwitchToRegister, updateUser }) => {
             exit="exit"
             variants={loadingVariant}
           >
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: "#16a34a",
-                textAlign: "center",
-              }}
-            >
-              Logged in successfully.
-            </div>
+            <Player
+              autoplay
+              loop
+              src={successAnimation}
+              style={{ height: 100, width: 100 }}
+            />
           </LOADING_ANIMATION>
         )}
       </PROMPT_CARD>
