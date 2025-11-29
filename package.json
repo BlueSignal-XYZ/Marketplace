@@ -11,14 +11,11 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:ci": "vitest run --reporter=verbose",
     "build:wqt": "VITE_APP_TITLE='WaterQuality.Trading' VITE_APP_BASE_URL='https://waterquality.trading' vite build --outDir dist-wqt",
     "build:cloud": "VITE_APP_TITLE='BlueSignal Cloud Monitoring' VITE_APP_BASE_URL='https://cloud.bluesignal.xyz' vite build --outDir dist-cloud",
     "deploy:wqt": "npm run build:wqt && firebase deploy --only hosting:waterquality-trading",
-    "deploy:cloud": "npm run build:cloud && firebase deploy --only hosting:cloud-bluesignal",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
-    "test:ci": "vitest run --reporter=verbose"
+    "deploy:cloud": "npm run build:cloud && firebase deploy --only hosting:cloud-bluesignal"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.4.2",
