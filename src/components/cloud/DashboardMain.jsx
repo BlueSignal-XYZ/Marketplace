@@ -200,17 +200,99 @@ const FooterStrip = styled.div`
   color: ${({ theme }) => theme.colors?.ui500 || "#6b7280"};
 `;
 
+const EmptyDevicesState = styled.div`
+  text-align: center;
+  padding: 48px 20px;
+  border: 2px dashed ${({ theme }) => theme.colors?.ui200 || "#e5e7eb"};
+  border-radius: 12px;
+  margin-top: 16px;
+`;
+
+const GettingStartedBanner = styled.div`
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border-radius: 12px;
+  padding: 24px;
+  color: #ffffff;
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0 0 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    opacity: 0.95;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+`;
+
+const BannerButton = styled.button`
+  background: #ffffff;
+  color: #0284c7;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+
+  &:hover {
+    background: #f0f9ff;
+    transform: translateY(-1px);
+  }
+
+  &.secondary {
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.6);
+    }
+  }
+`;
+
 export default function DashboardMain() {
+  // Show getting started banner for first-time users
+  const showGettingStarted = true; // TODO: Set to false once user has devices
+
   return (
     <Page>
       <Shell>
         <HeaderBlock>
           <Title>BlueSignal Cloud Monitoring</Title>
           <Subtitle>
-            Your devices, signals, and water quality in one view. Add a gateway
-            or probe to start streaming real-time data into the cloud.
+            Monitor your water quality sensors, soil probes, and environmental devices in real-time.
           </Subtitle>
         </HeaderBlock>
+
+        {showGettingStarted && (
+          <GettingStartedBanner>
+            <h2>Welcome to BlueSignal Cloud</h2>
+            <p>
+              Connect LoRaWAN gateways, water quality buoys, soil NPK probes, and other devices to stream real-time environmental data.
+            </p>
+            <div className="actions">
+              <BannerButton type="button">
+                + Add Your First Device
+              </BannerButton>
+              <BannerButton className="secondary" type="button">
+                View Documentation
+              </BannerButton>
+            </div>
+          </GettingStartedBanner>
+        )}
 
         <ViewsStrip>
           <ViewChip active>Environment</ViewChip>
@@ -223,49 +305,19 @@ export default function DashboardMain() {
           <DevicesHeader>
             <DevicesTitle>
               <h2>Your Devices</h2>
-              <p>Example layout until real devices are synced.</p>
+              <p>Connect and monitor environmental sensors and IoT devices.</p>
             </DevicesTitle>
             <AddDeviceButton type="button">+ Add Device</AddDeviceButton>
           </DevicesHeader>
 
-          <DevicesGrid>
-            <DeviceCard>
-              <DeviceHeader>
-                <DeviceName>Lakefront Buoy #1</DeviceName>
-                <StatusPill>Online</StatusPill>
-              </DeviceHeader>
-              <DeviceMeta>
-                <span>Type: Water Quality Buoy</span>
-                <span>Location: North Shore Cove</span>
-                <span>Temp: 18.4°C · pH 7.2 · DO 8.1 mg/L</span>
-              </DeviceMeta>
-            </DeviceCard>
-
-            <DeviceCard>
-              <DeviceHeader>
-                <DeviceName>East Field Soil Probe</DeviceName>
-                <StatusPill variant="warning">Warning</StatusPill>
-              </DeviceHeader>
-              <DeviceMeta>
-                <span>Type: Soil NPK Probe</span>
-                <span>Location: East Field — Row 12</span>
-                <span>Moisture: 42% · Nitrate: 18 ppm · Phosphate: 7 ppm</span>
-              </DeviceMeta>
-            </DeviceCard>
-
-            <DeviceCard>
-              <DeviceHeader>
-                <DeviceName>Algae Emitter — Dock</DeviceName>
-                <StatusPill variant="offline">Offline</StatusPill>
-              </DeviceHeader>
-              <DeviceMeta>
-                <span>Type: Ultrasonic Algae Control</span>
-                <span>Location: Dock</span>
-                <span>Last heartbeat: —</span>
-              </DeviceMeta>
-              <FooterStrip>No link · 0 devices</FooterStrip>
-            </DeviceCard>
-          </DevicesGrid>
+          <EmptyDevicesState>
+            <p style={{ fontSize: '15px', fontWeight: 600, marginBottom: '8px' }}>
+              No devices connected yet
+            </p>
+            <p style={{ fontSize: '13px', color: '#6b7280' }}>
+              Add your first gateway, sensor, or probe to start monitoring.
+            </p>
+          </EmptyDevicesState>
         </div>
       </Shell>
     </Page>

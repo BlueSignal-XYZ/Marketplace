@@ -119,6 +119,61 @@ const ActionButton = styled.button`
   }
 `;
 
+const GettingStartedBanner = styled.div`
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border-radius: 12px;
+  padding: 24px;
+  color: #ffffff;
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0 0 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    opacity: 0.95;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+`;
+
+const BannerButton = styled.button`
+  background: #ffffff;
+  color: #0284c7;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+
+  &:hover {
+    background: #f0f9ff;
+    transform: translateY(-1px);
+  }
+
+  &.secondary {
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.6);
+    }
+  }
+`;
+
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
@@ -186,57 +241,9 @@ const BuyerDashboard = () => {
       // const availableCredits = await CreditAPI.getAvailableCredits();
       // const userPurchases = await UserAPI.purchases.getHistory(user.uid);
 
-      // Mock data for now
-      setCredits([
-        {
-          id: 'c1',
-          type: 'Nutrient Reduction',
-          amount: 150,
-          unit: 'lbs N',
-          price: 45.0,
-          location: 'Upper Chesapeake Bay',
-          seller: 'Johnson Farm Co-op',
-        },
-        {
-          id: 'c2',
-          type: 'Stormwater Retention',
-          amount: 3200,
-          unit: 'gal',
-          price: 120.0,
-          location: 'Baltimore County',
-          seller: 'Green Infrastructure LLC',
-        },
-        {
-          id: 'c3',
-          type: 'Thermal Mitigation',
-          amount: 500,
-          unit: 'BTU',
-          price: 75.0,
-          location: 'Patuxent River Watershed',
-          seller: 'Riverkeep Solutions',
-        },
-      ]);
-
-      setPurchases([
-        {
-          id: 'p1',
-          date: '2025-11-20',
-          type: 'Nutrient Reduction',
-          amount: 100,
-          unit: 'lbs N',
-          price: 30.0,
-          status: 'Completed',
-        },
-        {
-          id: 'p2',
-          date: '2025-11-15',
-          type: 'Stormwater Retention',
-          amount: 2000,
-          unit: 'gal',
-          price: 80.0,
-          status: 'Pending Verification',
-        },
-      ]);
+      // For now: empty arrays - will show getting started guidance
+      setCredits([]);
+      setPurchases([]);
     } catch (error) {
       console.error('Error loading buyer dashboard:', error);
     } finally {
@@ -275,6 +282,24 @@ const BuyerDashboard = () => {
           </p>
         </Header>
 
+        {credits.length === 0 && purchases.length === 0 && !loading && (
+          <GettingStartedBanner>
+            <h2>Welcome to WaterQuality.Trading</h2>
+            <p>
+              Purchase verified nutrient reduction, stormwater, and thermal mitigation credits
+              to meet compliance requirements and support watershed restoration.
+            </p>
+            <div className="actions">
+              <BannerButton onClick={handleBrowseMarketplace}>
+                Browse Available Credits
+              </BannerButton>
+              <BannerButton className="secondary" onClick={() => navigate('/registry')}>
+                Explore Registry
+              </BannerButton>
+            </div>
+          </GettingStartedBanner>
+        )}
+
         <Grid>
           <StatusCard>
             <div className="label">Available Credits</div>
@@ -299,10 +324,15 @@ const BuyerDashboard = () => {
           <h2>Available Credits for Purchase</h2>
           {credits.length === 0 ? (
             <EmptyState>
-              <p>No credits currently available.</p>
-              <p style={{ marginTop: '8px', fontSize: '13px' }}>
-                Check back soon or contact sellers directly.
+              <p style={{ fontSize: '15px', fontWeight: 600, marginBottom: '12px' }}>
+                No credits loaded yet
               </p>
+              <p style={{ marginTop: '8px', fontSize: '13px', marginBottom: '16px' }}>
+                Browse the marketplace to discover nutrient reduction, stormwater retention, and thermal mitigation credits.
+              </p>
+              <ActionButton onClick={handleBrowseMarketplace}>
+                Browse Marketplace
+              </ActionButton>
             </EmptyState>
           ) : (
             <Table>
@@ -339,21 +369,17 @@ const BuyerDashboard = () => {
               </tbody>
             </Table>
           )}
-
-          <div style={{ marginTop: '20px' }}>
-            <ActionButton onClick={handleBrowseMarketplace}>
-              Browse All Credits
-            </ActionButton>
-          </div>
         </Section>
 
         <Section>
           <h2>Recent Purchases</h2>
           {purchases.length === 0 ? (
             <EmptyState>
-              <p>You haven't made any purchases yet.</p>
+              <p style={{ fontSize: '15px', fontWeight: 600, marginBottom: '12px' }}>
+                No purchases yet
+              </p>
               <p style={{ marginTop: '8px', fontSize: '13px' }}>
-                Start by browsing available credits above.
+                Your purchase history will appear here once you complete your first transaction.
               </p>
             </EmptyState>
           ) : (
