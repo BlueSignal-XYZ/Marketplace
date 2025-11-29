@@ -109,7 +109,8 @@ export const AppProvider = ({ children }) => {
     },
     ACTIONS: {
       setIsLoading,
-      updateUser,
+      setUser, // Direct user state setter (for Firebase Auth)
+      updateUser, // Fetches full user data from backend
       setSearchResults,
       setRoutePath,
       handleSidebar,

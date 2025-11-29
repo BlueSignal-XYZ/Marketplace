@@ -92,7 +92,7 @@ function isValidEmail(email) {
 /*                                 LOGIN FORM                                  */
 /* -------------------------------------------------------------------------- */
 
-const LoginForm = () => {
+const LoginForm = ({ onSuccess, onSwitchToRegister }) => {
   const { ACTIONS } = useAppContext();
   const navigate = useNavigate();
 
@@ -126,14 +126,27 @@ const LoginForm = () => {
     try {
       setSubmitting(true);
       const result = await signInWithEmailAndPassword(auth, email, password);
-      const user = result.user;
+      const firebaseUser = result.user;
 
-      ACTIONS?.setUser?.(user);
+      // Fetch full user data from backend (includes role, username, etc.)
+      const userDataFetched = await ACTIONS?.updateUser?.(firebaseUser.uid);
 
-      // Let MarketplaceLanding handle redirect, but push a hint
-      setTimeout(() => {
-        navigate("/marketplace", { replace: true });
-      }, 600);
+      if (!userDataFetched) {
+        // Fallback: if backend fetch fails, use Firebase user + set basic defaults
+        const basicUser = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          role: "buyer", // default role
+        };
+        sessionStorage.setItem("user", JSON.stringify(basicUser));
+        ACTIONS?.setUser?.(basicUser);
+      }
+
+      // Call onSuccess if provided (Welcome.jsx wires this to enterDash for mode-aware routing)
+      if (onSuccess) {
+        onSuccess();
+      }
+      // If no onSuccess, Welcome.jsx useEffect will handle redirect via auth state change
     } catch (err) {
       console.error(err);
       handleError(err?.message || "Unable to sign in. Please try again.");
@@ -222,7 +235,7 @@ const LoginForm = () => {
             Need an account?{" "}
             <ButtonLink
               type="button"
-              onClick={() => navigate("/?mode=register")}
+              onClick={onSwitchToRegister || (() => navigate("/?mode=register"))}
             >
               Create one here.
             </ButtonLink>
