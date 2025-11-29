@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { motion } from "framer-motion";
 import { useAppContext } from "../context/AppContext";
+import { getDefaultDashboardRoute } from "../utils/roleRouting";
 
 const Container = styled(motion.div)`
   display: flex;
@@ -48,6 +49,26 @@ const variants = {
 const NotFound = () => {
   const { STATES } = useAppContext();
   const { user, isLoading } = STATES || {};
+
+  // Detect mode based on hostname
+  const host = window.location.hostname;
+  const mode =
+    host === "cloud.bluesignal.xyz" ||
+    host.endsWith(".cloud.bluesignal.xyz") ||
+    host === "cloud-bluesignal.web.app"
+      ? "cloud"
+      : "marketplace";
+
+  // Determine home route based on user and mode
+  const getHomeRoute = () => {
+    if (user?.uid) {
+      return getDefaultDashboardRoute(user, mode);
+    }
+    return "/"; // Login page for both modes
+  };
+
+  const homeRoute = getHomeRoute();
+
   return (
     <Container
       initial="initial"
@@ -63,7 +84,7 @@ const NotFound = () => {
         <>
           <Title>404 - Not Found</Title>
           <Description>The page you're looking for doesn't exist.</Description>
-          <Button to="/">Go Home</Button>
+          <Button to={homeRoute}>Go Home</Button>
         </>
       ) : (
         <>
@@ -71,7 +92,7 @@ const NotFound = () => {
           <Description>
             The page you're looking for doesn't exist or you do not have access.
           </Description>
-          <Button to="/">Go Home</Button>
+          <Button to={homeRoute}>Go Home</Button>
         </>
       )}
     </Container>
