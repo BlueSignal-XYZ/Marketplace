@@ -263,117 +263,357 @@ const MarketplaceLanding = ({ user }) => {
 };
 
 /* -------------------------------------------------------------------------- */
+/*                           AUTH GUARD HELPER                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * RequireAuth - Wraps route elements to handle authentication
+ *
+ * This ensures routes are always registered, but content depends on auth state:
+ * - If user not logged in: shows Welcome/login screen
+ * - If user logged in: shows the protected component
+ *
+ * This prevents 404s during auth initialization and route tree rebuilds.
+ */
+const RequireAuth = ({ children, user }) => {
+  if (!user?.uid) {
+    // Not authenticated or auth still loading - show Welcome
+    return <Welcome />;
+  }
+  // Authenticated - render the protected component
+  return children;
+};
+
+/* -------------------------------------------------------------------------- */
 /*                                 CLOUD ROUTES                                */
 /* -------------------------------------------------------------------------- */
 
-const CloudRoutes = ({ user }) => (
-  <Routes>
-    <Route path="/" element={<CloudLanding user={user} />} />
+/**
+ * Cloud Routes - BlueSignal Monitoring Console
+ *
+ * IMPORTANT: All routes are registered unconditionally to prevent 404s.
+ * Auth is handled via RequireAuth wrapper, not conditional rendering of <Route>.
+ *
+ * Route order matters: specific routes BEFORE dynamic routes.
+ */
+const CloudRoutes = ({ user }) => {
+  console.log("🔵 CloudRoutes rendering, user:", user?.uid || "none");
 
-    {/* ALWAYS-REGISTERED CLOUD DASHBOARD ROUTE — fixes 404 */}
-    <Route
-      path="/dashboard/main"
-      element={user?.uid ? <OverviewDashboard /> : <Welcome />}
-    />
+  return (
+    <Routes>
+      {/* Landing page - handles post-auth redirect */}
+      <Route path="/" element={<CloudLanding user={user} />} />
 
-    {/* Auth-gated Cloud routes */}
-    {user?.uid && (
-      <>
-        {/* Role dashboards */}
-        <Route path="/dashboard/buyer" element={<BuyerDashboard />} />
-        <Route path="/dashboard/seller" element={<SellerDashboard_Role />} />
-        <Route path="/dashboard/installer" element={<InstallerDashboard />} />
+      {/* ==================== DASHBOARD ROUTES (specific before dynamic) ==================== */}
 
-        {/* Legacy dashboard */}
-        <Route path="/dashboard/:dashID" element={<Home />} />
+      {/* Main cloud dashboard - always available */}
+      <Route
+        path="/dashboard/main"
+        element={
+          <RequireAuth user={user}>
+            <OverviewDashboard />
+          </RequireAuth>
+        }
+      />
 
-        {/* Cloud console */}
-        <Route path="/cloud/sites" element={<OverviewDashboard />} />
-        <Route path="/cloud/devices" element={<DevicesListPage />} />
-        <Route path="/cloud/devices/:deviceId" element={<DeviceDetailPage />} />
-        <Route path="/cloud/commissioning" element={<CommissioningPage />} />
-        <Route path="/cloud/alerts" element={<AlertsPage />} />
+      {/* Role-specific dashboards */}
+      <Route
+        path="/dashboard/buyer"
+        element={
+          <RequireAuth user={user}>
+            <BuyerDashboard />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/seller"
+        element={
+          <RequireAuth user={user}>
+            <SellerDashboard_Role />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/installer"
+        element={
+          <RequireAuth user={user}>
+            <InstallerDashboard />
+          </RequireAuth>
+        }
+      />
 
-        {/* Cloud tools (non-marketplace) */}
-        <Route
-          path="/cloud/tools/nutrient-calculator"
-          element={<CloudNutrientCalculator />}
-        />
-        <Route path="/cloud/tools/verification" element={<CloudVerification />} />
-        <Route path="/cloud/tools/live" element={<CloudLiveStream />} />
-        <Route path="/cloud/tools/upload-media" element={<CloudUploadMedia />} />
+      {/* Legacy dashboard - MUST come after specific dashboard routes */}
+      <Route
+        path="/dashboard/:dashID"
+        element={
+          <RequireAuth user={user}>
+            <Home />
+          </RequireAuth>
+        }
+      />
 
-        {/* Media */}
-        <Route path="/media/:playbackID" element={<CloudMediaPlayer />} />
-        <Route path="/media/live/:liveID" element={<CloudMediaPlayer />} />
+      {/* ==================== CLOUD CONSOLE ROUTES ==================== */}
 
-        {/* Legacy features for backwards compatibility */}
-        <Route
-          path="/features/nutrient-calculator"
-          element={<CloudNutrientCalculator />}
-        />
-        <Route path="/features/verification" element={<CloudVerification />} />
-        <Route path="/features/stream" element={<CloudLiveStream />} />
-        <Route path="/features/upload-media" element={<CloudUploadMedia />} />
-        <Route path="/features/:serviceID" element={<Livepeer />} />
-      </>
-    )}
+      <Route
+        path="/cloud/sites"
+        element={
+          <RequireAuth user={user}>
+            <OverviewDashboard />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cloud/devices"
+        element={
+          <RequireAuth user={user}>
+            <DevicesListPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cloud/devices/:deviceId"
+        element={
+          <RequireAuth user={user}>
+            <DeviceDetailPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cloud/commissioning"
+        element={
+          <RequireAuth user={user}>
+            <CommissioningPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cloud/alerts"
+        element={
+          <RequireAuth user={user}>
+            <AlertsPage />
+          </RequireAuth>
+        }
+      />
 
-    <Route path="*" element={<NotFound />} />
-  </Routes>
-);
+      {/* ==================== CLOUD TOOLS ==================== */}
+
+      <Route
+        path="/cloud/tools/nutrient-calculator"
+        element={
+          <RequireAuth user={user}>
+            <CloudNutrientCalculator />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cloud/tools/verification"
+        element={
+          <RequireAuth user={user}>
+            <CloudVerification />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cloud/tools/live"
+        element={
+          <RequireAuth user={user}>
+            <CloudLiveStream />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cloud/tools/upload-media"
+        element={
+          <RequireAuth user={user}>
+            <CloudUploadMedia />
+          </RequireAuth>
+        }
+      />
+
+      {/* ==================== MEDIA ROUTES ==================== */}
+
+      <Route
+        path="/media/:playbackID"
+        element={
+          <RequireAuth user={user}>
+            <CloudMediaPlayer />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/media/live/:liveID"
+        element={
+          <RequireAuth user={user}>
+            <CloudMediaPlayer />
+          </RequireAuth>
+        }
+      />
+
+      {/* ==================== LEGACY ROUTES (backwards compatibility) ==================== */}
+
+      <Route
+        path="/features/nutrient-calculator"
+        element={
+          <RequireAuth user={user}>
+            <CloudNutrientCalculator />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/features/verification"
+        element={
+          <RequireAuth user={user}>
+            <CloudVerification />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/features/stream"
+        element={
+          <RequireAuth user={user}>
+            <CloudLiveStream />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/features/upload-media"
+        element={
+          <RequireAuth user={user}>
+            <CloudUploadMedia />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/features/:serviceID"
+        element={
+          <RequireAuth user={user}>
+            <Livepeer />
+          </RequireAuth>
+        }
+      />
+
+      {/* ==================== 404 CATCH-ALL ==================== */}
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
 /* -------------------------------------------------------------------------- */
 /*                             MARKETPLACE ROUTES                              */
 /* -------------------------------------------------------------------------- */
 
-const MarketplaceRoutes = ({ user }) => (
-  <Routes>
-    <Route path="/" element={<MarketplaceLanding user={user} />} />
+/**
+ * Marketplace Routes - WaterQuality.Trading
+ *
+ * IMPORTANT: All routes are registered unconditionally to prevent 404s.
+ * Auth is handled via RequireAuth wrapper, not conditional rendering of <Route>.
+ */
+const MarketplaceRoutes = ({ user }) => {
+  console.log("🛒 MarketplaceRoutes rendering, user:", user?.uid || "none");
 
-    {/* Public marketplace routes */}
-    <Route path="/marketplace" element={<Marketplace />} />
-    <Route path="/marketplace/listing/:id" element={<ListingPage />} />
-    <Route path="/recent-removals" element={<RecentRemoval />} />
-    <Route path="/certificate/:id" element={<CertificatePage />} />
-    <Route path="/registry" element={<Registry />} />
-    <Route path="/map" element={<Map />} />
-    <Route path="/presale" element={<Presale />} />
+  return (
+    <Routes>
+      {/* Landing page - handles post-auth redirect */}
+      <Route path="/" element={<MarketplaceLanding user={user} />} />
 
-    {/* Auth-gated marketplace */}
-    {user?.uid && (
-      <>
-        <Route path="/dashboard/buyer" element={<BuyerDashboard />} />
-        <Route path="/dashboard/seller" element={<SellerDashboard_Role />} />
-        <Route path="/dashboard/installer" element={<InstallerDashboard />} />
+      {/* ==================== PUBLIC MARKETPLACE ROUTES ==================== */}
 
-        {/* Marketplace tools */}
-        <Route
-          path="/marketplace/tools/calculator"
-          element={<NutrientCalculator />}
-        />
-        <Route path="/marketplace/tools/live" element={<Livepeer />} />
-        <Route
-          path="/marketplace/tools/upload"
-          element={<Livepeer />}
-        />
-        <Route
-          path="/marketplace/tools/verification"
-          element={<VerificationUI />}
-        />
+      <Route path="/marketplace" element={<Marketplace />} />
+      <Route path="/marketplace/listing/:id" element={<ListingPage />} />
+      <Route path="/recent-removals" element={<RecentRemoval />} />
+      <Route path="/certificate/:id" element={<CertificatePage />} />
+      <Route path="/registry" element={<Registry />} />
+      <Route path="/map" element={<Map />} />
+      <Route path="/presale" element={<Presale />} />
 
-        {/* Account */}
-        <Route
-          path="/marketplace/seller-dashboard"
-          element={<SellerDashboard />}
-        />
-        <Route path="/dashboard/financial" element={<FinancialDashboard />} />
-      </>
-    )}
+      {/* ==================== ROLE DASHBOARDS ==================== */}
 
-    <Route path="*" element={<NotFound />} />
-  </Routes>
-);
+      <Route
+        path="/dashboard/buyer"
+        element={
+          <RequireAuth user={user}>
+            <BuyerDashboard />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/seller"
+        element={
+          <RequireAuth user={user}>
+            <SellerDashboard_Role />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/installer"
+        element={
+          <RequireAuth user={user}>
+            <InstallerDashboard />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/financial"
+        element={
+          <RequireAuth user={user}>
+            <FinancialDashboard />
+          </RequireAuth>
+        }
+      />
+
+      {/* ==================== MARKETPLACE TOOLS ==================== */}
+
+      <Route
+        path="/marketplace/tools/calculator"
+        element={
+          <RequireAuth user={user}>
+            <NutrientCalculator />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/marketplace/tools/live"
+        element={
+          <RequireAuth user={user}>
+            <Livepeer />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/marketplace/tools/upload"
+        element={
+          <RequireAuth user={user}>
+            <Livepeer />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/marketplace/tools/verification"
+        element={
+          <RequireAuth user={user}>
+            <VerificationUI />
+          </RequireAuth>
+        }
+      />
+
+      {/* ==================== SELLER ACCOUNT ==================== */}
+
+      <Route
+        path="/marketplace/seller-dashboard"
+        element={
+          <RequireAuth user={user}>
+            <SellerDashboard />
+          </RequireAuth>
+        }
+      />
+
+      {/* ==================== 404 CATCH-ALL ==================== */}
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
 /* -------------------------------------------------------------------------- */
 /*                                GLOBAL POPUPS                                */
