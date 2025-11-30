@@ -6,6 +6,7 @@ const AppContext = createContext();
 export const AppProvider = ({ children }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true); // NEW: Track auth initialization
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
   const [routePath, setRoutePath] = useState("");
@@ -31,10 +32,26 @@ export const AppProvider = ({ children }) => {
       window.removeEventListener("resize", () => setIsMobile(isMobileScreen()));
   }, []);
 
+  // CRITICAL FIX: Initialize auth state on app load
   useEffect(() => {
-    const loggedUser = JSON.parse(sessionStorage.getItem("user"));
-    const { uid } = loggedUser || {};
-    uid ? updateUser(uid) : setIsLoading(false);
+    const initializeAuth = async () => {
+      try {
+        const loggedUser = JSON.parse(sessionStorage.getItem("user"));
+        const { uid } = loggedUser || {};
+
+        if (uid) {
+          await updateUser(uid);
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+      } finally {
+        // ALWAYS complete auth loading, even on error
+        setAuthLoading(false);
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   const updateUser = async (uid, _userdata = {}) => {
@@ -48,12 +65,14 @@ export const AppProvider = ({ children }) => {
       if (userdata?.uid) {
         sessionStorage.setItem("user", JSON.stringify(userdata));
         setUser(userdata);
-        console.log("Set User", userdata)
+        console.log("✅ User loaded:", userdata.uid, "Role:", userdata.role);
         return true;
       }
     } catch (error) {
       logNotification("error", error.message);
+      console.error("❌ updateUser failed:", error);
     } finally {
+      setAuthLoading(false);
       setIsLoading(false);
     }
     return null;
@@ -89,6 +108,7 @@ export const AppProvider = ({ children }) => {
 
   const APP = {
     STATES: {
+      authLoading,  // NEW: Expose auth loading state
       isLoading,
       isMobile,
       user,

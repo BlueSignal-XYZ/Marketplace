@@ -92,7 +92,7 @@ console.log("🔥 BUILD VERSION:", BUILD_VERSION);
 
 function App() {
   const { STATES } = useAppContext();
-  const { user } = STATES || {};
+  const { user, authLoading } = STATES || {};
 
   const host = window.location.hostname;
   const params = new URLSearchParams(window.location.search);
@@ -118,11 +118,11 @@ function App() {
     }
   }
 
-  console.log("🌐 MODE:", mode, "| USER:", user?.uid || "none");
+  console.log("🌐 MODE:", mode, "| USER:", user?.uid || "none", "| AUTH LOADING:", authLoading);
 
   return (
     <Router>
-      <AppShell mode={mode} user={user} />
+      <AppShell mode={mode} user={user} authLoading={authLoading} />
     </Router>
   );
 }
@@ -131,7 +131,7 @@ function App() {
 /*                                   APP SHELL                                */
 /* -------------------------------------------------------------------------- */
 
-function AppShell({ mode, user }) {
+function AppShell({ mode, user, authLoading }) {
   const location = useLocation();
 
   const [cloudMenuOpen, setCloudMenuOpen] = React.useState(false);
@@ -221,9 +221,9 @@ function AppShell({ mode, user }) {
 
       {/* ROUTES */}
       {mode === "cloud" ? (
-        <CloudRoutes user={user} />
+        <CloudRoutes user={user} authLoading={authLoading} />
       ) : (
-        <MarketplaceRoutes user={user} />
+        <MarketplaceRoutes user={user} authLoading={authLoading} />
       )}
 
       {/* BADGE PORTAL */}
@@ -236,28 +236,72 @@ function AppShell({ mode, user }) {
 /*                        LANDING / POST-AUTH REDIRECTS                        */
 /* -------------------------------------------------------------------------- */
 
-const CloudLanding = ({ user }) => {
+/**
+ * CloudLanding - Handles / route for Cloud mode
+ * CRITICAL FIX: Wait for auth to complete before redirecting
+ */
+const CloudLanding = ({ user, authLoading }) => {
   const navigate = useNavigate();
 
   React.useEffect(() => {
+    // CRITICAL: Don't redirect while auth is still loading
+    if (authLoading) {
+      console.log("⏳ CloudLanding: Auth still loading, waiting...");
+      return;
+    }
+
     if (user?.uid) {
       const route = getDefaultDashboardRoute(user, "cloud");
+      console.log("✅ CloudLanding: Authenticated, redirecting to:", route);
       navigate(route, { replace: true });
+    } else {
+      console.log("❌ CloudLanding: No user, showing Welcome");
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
+  // Show loading state while auth initializes
+  if (authLoading) {
+    return (
+      <LoadingContainer>
+        <LoadingSpinner />
+        <LoadingText>Loading BlueSignal Cloud...</LoadingText>
+      </LoadingContainer>
+    );
+  }
+
+  // Show login if not authenticated
   return <Welcome />;
 };
 
-const MarketplaceLanding = ({ user }) => {
+/**
+ * MarketplaceLanding - Handles / route for Marketplace mode
+ */
+const MarketplaceLanding = ({ user, authLoading }) => {
   const navigate = useNavigate();
 
   React.useEffect(() => {
+    if (authLoading) {
+      console.log("⏳ MarketplaceLanding: Auth still loading, waiting...");
+      return;
+    }
+
     if (user?.uid) {
       const route = getDefaultDashboardRoute(user, "marketplace");
+      console.log("✅ MarketplaceLanding: Authenticated, redirecting to:", route);
       navigate(route, { replace: true });
+    } else {
+      console.log("❌ MarketplaceLanding: No user, showing Welcome");
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
+
+  if (authLoading) {
+    return (
+      <LoadingContainer>
+        <LoadingSpinner />
+        <LoadingText>Loading WaterQuality.Trading...</LoadingText>
+      </LoadingContainer>
+    );
+  }
 
   return <Welcome />;
 };
@@ -268,16 +312,27 @@ const MarketplaceLanding = ({ user }) => {
 
 /**
  * CloudAuthGate - Protects Cloud routes while preventing 404s
- * Shows Welcome (login) if no user, otherwise renders the protected component
+ * Shows loading while auth initializes, Welcome if no user, otherwise renders protected component
  */
-const CloudAuthGate = ({ children }) => {
+const CloudAuthGate = ({ children, authLoading }) => {
+  if (authLoading) {
+    return (
+      <LoadingContainer>
+        <LoadingSpinner />
+        <LoadingText>Authenticating...</LoadingText>
+      </LoadingContainer>
+    );
+  }
+
   const { STATES } = useAppContext();
   const { user } = STATES || {};
 
   if (!user?.uid) {
+    console.log("🚫 CloudAuthGate: No authenticated user, showing Welcome");
     return <Welcome />;
   }
 
+  console.log("✅ CloudAuthGate: User authenticated, rendering protected route");
   return children;
 };
 
@@ -285,9 +340,9 @@ const CloudAuthGate = ({ children }) => {
 /*                                 CLOUD ROUTES                                */
 /* -------------------------------------------------------------------------- */
 
-const CloudRoutes = ({ user }) => (
+const CloudRoutes = ({ user, authLoading }) => (
   <Routes>
-    <Route path="/" element={<CloudLanding user={user} />} />
+    <Route path="/" element={<CloudLanding user={user} authLoading={authLoading} />} />
 
     {/*
       ALWAYS-REGISTERED CLOUD DASHBOARD ROUTES
@@ -297,7 +352,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/dashboard/main"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <OverviewDashboard />
         </CloudAuthGate>
       }
@@ -306,7 +361,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/dashboard/buyer"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <BuyerDashboard />
         </CloudAuthGate>
       }
@@ -315,7 +370,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/dashboard/seller"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <SellerDashboard_Role />
         </CloudAuthGate>
       }
@@ -324,7 +379,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/dashboard/installer"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <InstallerDashboard />
         </CloudAuthGate>
       }
@@ -334,7 +389,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/dashboard/:dashID"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <Home />
         </CloudAuthGate>
       }
@@ -344,7 +399,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/cloud/sites"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <OverviewDashboard />
         </CloudAuthGate>
       }
@@ -353,7 +408,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/cloud/devices"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <DevicesListPage />
         </CloudAuthGate>
       }
@@ -362,7 +417,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/cloud/devices/:deviceId"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <DeviceDetailPage />
         </CloudAuthGate>
       }
@@ -371,7 +426,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/cloud/commissioning"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <CommissioningPage />
         </CloudAuthGate>
       }
@@ -380,7 +435,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/cloud/alerts"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <AlertsPage />
         </CloudAuthGate>
       }
@@ -390,7 +445,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/cloud/tools/nutrient-calculator"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <CloudNutrientCalculator />
         </CloudAuthGate>
       }
@@ -399,7 +454,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/cloud/tools/verification"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <CloudVerification />
         </CloudAuthGate>
       }
@@ -408,7 +463,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/cloud/tools/live"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <CloudLiveStream />
         </CloudAuthGate>
       }
@@ -417,7 +472,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/cloud/tools/upload-media"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <CloudUploadMedia />
         </CloudAuthGate>
       }
@@ -427,7 +482,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/media/:playbackID"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <CloudMediaPlayer />
         </CloudAuthGate>
       }
@@ -436,7 +491,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/media/live/:liveID"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <CloudMediaPlayer />
         </CloudAuthGate>
       }
@@ -446,7 +501,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/features/nutrient-calculator"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <CloudNutrientCalculator />
         </CloudAuthGate>
       }
@@ -455,7 +510,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/features/verification"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <CloudVerification />
         </CloudAuthGate>
       }
@@ -464,7 +519,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/features/stream"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <CloudLiveStream />
         </CloudAuthGate>
       }
@@ -473,7 +528,7 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/features/upload-media"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <CloudUploadMedia />
         </CloudAuthGate>
       }
@@ -482,13 +537,17 @@ const CloudRoutes = ({ user }) => (
     <Route
       path="/features/:serviceID"
       element={
-        <CloudAuthGate>
+        <CloudAuthGate authLoading={authLoading}>
           <Livepeer />
         </CloudAuthGate>
       }
     />
 
-    <Route path="*" element={<NotFound />} />
+    {/*
+      CRITICAL FIX: Catch-all redirects to CloudLanding instead of NotFound
+      This prevents 404s when accessing unknown routes in Cloud mode
+    */}
+    <Route path="*" element={<CloudLanding user={user} authLoading={authLoading} />} />
   </Routes>
 );
 
@@ -496,9 +555,9 @@ const CloudRoutes = ({ user }) => (
 /*                             MARKETPLACE ROUTES                              */
 /* -------------------------------------------------------------------------- */
 
-const MarketplaceRoutes = ({ user }) => (
+const MarketplaceRoutes = ({ user, authLoading }) => (
   <Routes>
-    <Route path="/" element={<MarketplaceLanding user={user} />} />
+    <Route path="/" element={<MarketplaceLanding user={user} authLoading={authLoading} />} />
 
     {/* Public marketplace routes */}
     <Route path="/marketplace" element={<Marketplace />} />
@@ -559,7 +618,7 @@ const Popups = () => (
 );
 
 /* -------------------------------------------------------------------------- */
-/*                               APP WRAPPER                                   */
+/*                               STYLED COMPONENTS                             */
 /* -------------------------------------------------------------------------- */
 
 const AppContainer = styled.div`
@@ -568,6 +627,37 @@ const AppContainer = styled.div`
   min-height: 100vh;
   width: 100vw;
   overflow-x: hidden;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+`;
+
+const LoadingSpinner = styled.div`
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+const LoadingText = styled.p`
+  margin-top: 20px;
+  font-size: 18px;
+  font-weight: 500;
+  opacity: 0.9;
 `;
 
 export default App;
