@@ -249,17 +249,22 @@ const CloudLanding = ({ user, authLoading }) => {
   const navigate = useNavigate();
 
   React.useEffect(() => {
+    console.log("🚀 CloudLanding useEffect fired:", {
+      user: user?.uid || "null",
+      authLoading,
+    });
+
     if (authLoading) {
-      console.log("⏳ CloudLanding: Auth loading...");
+      console.log("⏳ CloudLanding: Auth loading, waiting...");
       return;
     }
 
     if (user?.uid) {
       const route = getDefaultDashboardRoute(user, "cloud");
-      console.log("➜ REDIRECT:", route);
+      console.log("✅ CloudLanding: User authenticated, redirecting to:", route);
       navigate(route, { replace: true });
     } else {
-      console.log("➜ REDIRECT: none (showing login)");
+      console.log("❌ CloudLanding: No user, showing login");
     }
   }, [user, authLoading, navigate]);
 
@@ -282,17 +287,22 @@ const MarketplaceLanding = ({ user, authLoading }) => {
   const navigate = useNavigate();
 
   React.useEffect(() => {
+    console.log("🚀 MarketplaceLanding useEffect fired:", {
+      user: user?.uid || "null",
+      authLoading,
+    });
+
     if (authLoading) {
-      console.log("⏳ MarketplaceLanding: Auth loading...");
+      console.log("⏳ MarketplaceLanding: Auth loading, waiting...");
       return;
     }
 
     if (user?.uid) {
       const route = getDefaultDashboardRoute(user, "marketplace");
-      console.log("➜ REDIRECT:", route);
+      console.log("✅ MarketplaceLanding: User authenticated, redirecting to:", route);
       navigate(route, { replace: true });
     } else {
-      console.log("➜ REDIRECT: none (showing login)");
+      console.log("❌ MarketplaceLanding: No user, showing login");
     }
   }, [user, authLoading, navigate]);
 

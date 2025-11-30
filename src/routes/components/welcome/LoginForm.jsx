@@ -93,7 +93,6 @@ function isValidEmail(email) {
 /* -------------------------------------------------------------------------- */
 
 const LoginForm = () => {
-  const { ACTIONS } = useAppContext();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -103,7 +102,7 @@ const LoginForm = () => {
   const [notification, setNotification] = useState(null);
 
   const handleError = (message) => {
-    console.error("Login error:", message);
+    console.error("🔐 Login error:", message);
     setNotification({
       type: "error",
       message,
@@ -125,21 +124,24 @@ const LoginForm = () => {
 
     try {
       setSubmitting(true);
+      console.log("🔐 Login attempt:", email);
+
       const result = await signInWithEmailAndPassword(auth, email, password);
       const user = result.user;
 
-      ACTIONS?.setUser?.(user);
+      console.log("✅ Login success:", user.uid);
+      console.log("⏳ Waiting for auth listener to update context...");
 
-      // Let MarketplaceLanding handle redirect, but push a hint
-      setTimeout(() => {
-        navigate("/marketplace", { replace: true });
-      }, 600);
+      // CRITICAL FIX: Don't navigate here!
+      // Let onAuthStateChanged listener update AppContext,
+      // then CloudLanding/MarketplaceLanding will handle redirect
+
     } catch (err) {
-      console.error(err);
+      console.error("❌ Login failed:", err);
       handleError(err?.message || "Unable to sign in. Please try again.");
-    } finally {
       setSubmitting(false);
     }
+    // Note: Don't setSubmitting(false) on success - form will unmount on redirect
   };
 
   const handleResetPassword = async () => {
