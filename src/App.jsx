@@ -54,14 +54,14 @@ import {
 } from "./components/popups";
 
 import { useAppContext } from "./context/AppContext";
-import DashboardMain from "./components/cloud/DashboardMain";
 
-// Cloud pages
+// Cloud console components
 import OverviewDashboard from "./components/cloud/OverviewDashboard";
 import DevicesListPage from "./components/cloud/DevicesListPage";
 import DeviceDetailPage from "./components/cloud/DeviceDetailPage";
 import CommissioningPage from "./components/cloud/CommissioningPage";
 import AlertsPage from "./components/cloud/AlertsPage";
+
 import {
   CloudNutrientCalculator,
   CloudVerification,
@@ -70,10 +70,11 @@ import {
   CloudMediaPlayer,
 } from "./components/cloud/CloudToolsWrapper";
 
-// Role-based dashboards
+// Role dashboards
 import BuyerDashboard from "./components/dashboards/BuyerDashboard";
 import SellerDashboard_Role from "./components/dashboards/SellerDashboard";
 import InstallerDashboard from "./components/dashboards/InstallerDashboard";
+
 import { getDefaultDashboardRoute } from "./utils/roleRouting";
 
 /* -------------------------------------------------------------------------- */
@@ -97,7 +98,7 @@ function App() {
   const params = new URLSearchParams(window.location.search);
   let mode = "marketplace";
 
-  // MODE DETECTION (Marketplace vs Cloud)
+  // MODE DETECTION
   if (
     host === "cloud.bluesignal.xyz" ||
     host.endsWith(".cloud.bluesignal.xyz") ||
@@ -146,7 +147,7 @@ function AppShell({ mode, user }) {
     setMarketMenuOpen((p) => !p);
   };
 
-  // Apply document title
+  // Apply tab title
   React.useEffect(() => {
     document.title =
       mode === "cloud"
@@ -164,7 +165,7 @@ function AppShell({ mode, user }) {
 
   return (
     <AppContainer>
-      {/* DEBUG VERSION LABEL */}
+      {/* DEBUG VERSION BUBBLE */}
       <div
         style={{
           position: "fixed",
@@ -225,14 +226,14 @@ function AppShell({ mode, user }) {
         <MarketplaceRoutes user={user} />
       )}
 
-      {/* BOTTOM BADGE */}
+      {/* BADGE PORTAL */}
       {user?.uid && <LinkBadgePortal />}
     </AppContainer>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/*                            LANDING REDIRECTS                               */
+/*                        LANDING / POST-AUTH REDIRECTS                        */
 /* -------------------------------------------------------------------------- */
 
 const CloudLanding = ({ user }) => {
@@ -262,34 +263,38 @@ const MarketplaceLanding = ({ user }) => {
 };
 
 /* -------------------------------------------------------------------------- */
-/*                                 CLOUD ROUTES                               */
+/*                                 CLOUD ROUTES                                */
 /* -------------------------------------------------------------------------- */
 
 const CloudRoutes = ({ user }) => (
   <Routes>
     <Route path="/" element={<CloudLanding user={user} />} />
 
+    {/* ALWAYS-REGISTERED CLOUD DASHBOARD ROUTE — fixes 404 */}
+    <Route
+      path="/dashboard/main"
+      element={user?.uid ? <OverviewDashboard /> : <Welcome />}
+    />
+
+    {/* Auth-gated Cloud routes */}
     {user?.uid && (
       <>
-        {/* Overview Dashboard */}
-        <Route path="/dashboard/main" element={<OverviewDashboard />} />
-
-        {/* Role-based dashboards */}
+        {/* Role dashboards */}
         <Route path="/dashboard/buyer" element={<BuyerDashboard />} />
         <Route path="/dashboard/seller" element={<SellerDashboard_Role />} />
         <Route path="/dashboard/installer" element={<InstallerDashboard />} />
 
-        {/* Legacy dashboard route */}
+        {/* Legacy dashboard */}
         <Route path="/dashboard/:dashID" element={<Home />} />
 
-        {/* Operations: Sites, Devices, Commissioning, Alerts */}
+        {/* Cloud console */}
         <Route path="/cloud/sites" element={<OverviewDashboard />} />
         <Route path="/cloud/devices" element={<DevicesListPage />} />
         <Route path="/cloud/devices/:deviceId" element={<DeviceDetailPage />} />
         <Route path="/cloud/commissioning" element={<CommissioningPage />} />
         <Route path="/cloud/alerts" element={<AlertsPage />} />
 
-        {/* Cloud Tools (non-marketplace, non-finance) */}
+        {/* Cloud tools (non-marketplace) */}
         <Route
           path="/cloud/tools/nutrient-calculator"
           element={<CloudNutrientCalculator />}
@@ -298,11 +303,11 @@ const CloudRoutes = ({ user }) => (
         <Route path="/cloud/tools/live" element={<CloudLiveStream />} />
         <Route path="/cloud/tools/upload-media" element={<CloudUploadMedia />} />
 
-        {/* Media player routes */}
+        {/* Media */}
         <Route path="/media/:playbackID" element={<CloudMediaPlayer />} />
         <Route path="/media/live/:liveID" element={<CloudMediaPlayer />} />
 
-        {/* Legacy features routes (keep for backwards compatibility) */}
+        {/* Legacy features for backwards compatibility */}
         <Route
           path="/features/nutrient-calculator"
           element={<CloudNutrientCalculator />}
@@ -319,14 +324,14 @@ const CloudRoutes = ({ user }) => (
 );
 
 /* -------------------------------------------------------------------------- */
-/*                             MARKETPLACE ROUTES                             */
+/*                             MARKETPLACE ROUTES                              */
 /* -------------------------------------------------------------------------- */
 
 const MarketplaceRoutes = ({ user }) => (
   <Routes>
     <Route path="/" element={<MarketplaceLanding user={user} />} />
 
-    {/* Public marketplace explore routes */}
+    {/* Public marketplace routes */}
     <Route path="/marketplace" element={<Marketplace />} />
     <Route path="/marketplace/listing/:id" element={<ListingPage />} />
     <Route path="/recent-removals" element={<RecentRemoval />} />
@@ -335,15 +340,14 @@ const MarketplaceRoutes = ({ user }) => (
     <Route path="/map" element={<Map />} />
     <Route path="/presale" element={<Presale />} />
 
-    {/* Auth-gated marketplace tools + account */}
+    {/* Auth-gated marketplace */}
     {user?.uid && (
       <>
-        {/* Role-based dashboards */}
         <Route path="/dashboard/buyer" element={<BuyerDashboard />} />
         <Route path="/dashboard/seller" element={<SellerDashboard_Role />} />
         <Route path="/dashboard/installer" element={<InstallerDashboard />} />
 
-        {/* Tools */}
+        {/* Marketplace tools */}
         <Route
           path="/marketplace/tools/calculator"
           element={<NutrientCalculator />}
@@ -351,7 +355,7 @@ const MarketplaceRoutes = ({ user }) => (
         <Route path="/marketplace/tools/live" element={<Livepeer />} />
         <Route
           path="/marketplace/tools/upload"
-          element={<Livepeer />} // placeholder for upload tool
+          element={<Livepeer />}
         />
         <Route
           path="/marketplace/tools/verification"
@@ -372,7 +376,7 @@ const MarketplaceRoutes = ({ user }) => (
 );
 
 /* -------------------------------------------------------------------------- */
-/*                                GLOBAL POPUPS                               */
+/*                                GLOBAL POPUPS                                */
 /* -------------------------------------------------------------------------- */
 
 const Popups = () => (
@@ -386,7 +390,7 @@ const Popups = () => (
 );
 
 /* -------------------------------------------------------------------------- */
-/*                               APP WRAPPER                                  */
+/*                               APP WRAPPER                                   */
 /* -------------------------------------------------------------------------- */
 
 const AppContainer = styled.div`
