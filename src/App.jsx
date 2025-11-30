@@ -84,7 +84,6 @@ import { getDefaultDashboardRoute } from "./utils/roleRouting";
 const BUILD_VERSION =
   import.meta.env.VITE_BUILD_VERSION ||
   new Date().toISOString().slice(0, 10);
-console.log("🔥 BUILD VERSION:", BUILD_VERSION);
 
 /* -------------------------------------------------------------------------- */
 /*                                   APP ROOT                                 */
@@ -118,7 +117,15 @@ function App() {
     }
   }
 
-  console.log("🌐 MODE:", mode, "| USER:", user?.uid || "none", "| AUTH LOADING:", authLoading);
+  // DIAGNOSTIC LOGGING (as per spec)
+  console.log("═══════════════════════════════════════════════════════════");
+  console.log("BUILD:", BUILD_VERSION);
+  console.log("MODE:", mode);
+  console.log("AUTH_LOADING:", authLoading);
+  console.log("USER:", user?.uid || "null");
+  console.log("ROLE:", user?.role || "null");
+  console.log("ROUTE:", window.location.pathname);
+  console.log("═══════════════════════════════════════════════════════════");
 
   return (
     <Router>
@@ -138,12 +145,10 @@ function AppShell({ mode, user, authLoading }) {
   const [marketMenuOpen, setMarketMenuOpen] = React.useState(false);
 
   const toggleCloudMenu = () => {
-    console.log("📡 CLOUD MENU TOGGLE:", !cloudMenuOpen);
     setCloudMenuOpen((p) => !p);
   };
 
   const toggleMarketMenu = () => {
-    console.log("🛒 MARKET MENU TOGGLE:", !marketMenuOpen);
     setMarketMenuOpen((p) => !p);
   };
 
@@ -187,7 +192,7 @@ function AppShell({ mode, user, authLoading }) {
           userSelect: "none",
         }}
       >
-        Last updated: {BUILD_VERSION}
+        {BUILD_VERSION}
       </div>
 
       {/* HEADERS */}
@@ -238,28 +243,26 @@ function AppShell({ mode, user, authLoading }) {
 
 /**
  * CloudLanding - Handles / route for Cloud mode
- * CRITICAL FIX: Wait for auth to complete before redirecting
+ * Waits for auth to complete, then redirects authenticated users
  */
 const CloudLanding = ({ user, authLoading }) => {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    // CRITICAL: Don't redirect while auth is still loading
     if (authLoading) {
-      console.log("⏳ CloudLanding: Auth still loading, waiting...");
+      console.log("⏳ CloudLanding: Auth loading...");
       return;
     }
 
     if (user?.uid) {
       const route = getDefaultDashboardRoute(user, "cloud");
-      console.log("✅ CloudLanding: Authenticated, redirecting to:", route);
+      console.log("➜ REDIRECT:", route);
       navigate(route, { replace: true });
     } else {
-      console.log("❌ CloudLanding: No user, showing Welcome");
+      console.log("➜ REDIRECT: none (showing login)");
     }
   }, [user, authLoading, navigate]);
 
-  // Show loading state while auth initializes
   if (authLoading) {
     return (
       <LoadingContainer>
@@ -269,7 +272,6 @@ const CloudLanding = ({ user, authLoading }) => {
     );
   }
 
-  // Show login if not authenticated
   return <Welcome />;
 };
 
@@ -281,16 +283,16 @@ const MarketplaceLanding = ({ user, authLoading }) => {
 
   React.useEffect(() => {
     if (authLoading) {
-      console.log("⏳ MarketplaceLanding: Auth still loading, waiting...");
+      console.log("⏳ MarketplaceLanding: Auth loading...");
       return;
     }
 
     if (user?.uid) {
       const route = getDefaultDashboardRoute(user, "marketplace");
-      console.log("✅ MarketplaceLanding: Authenticated, redirecting to:", route);
+      console.log("➜ REDIRECT:", route);
       navigate(route, { replace: true });
     } else {
-      console.log("❌ MarketplaceLanding: No user, showing Welcome");
+      console.log("➜ REDIRECT: none (showing login)");
     }
   }, [user, authLoading, navigate]);
 
@@ -311,8 +313,8 @@ const MarketplaceLanding = ({ user, authLoading }) => {
 /* -------------------------------------------------------------------------- */
 
 /**
- * CloudAuthGate - Protects Cloud routes while preventing 404s
- * Shows loading while auth initializes, Welcome if no user, otherwise renders protected component
+ * CloudAuthGate - Protects Cloud routes
+ * Shows loading → login → or protected content
  */
 const CloudAuthGate = ({ children, authLoading }) => {
   if (authLoading) {
@@ -328,11 +330,11 @@ const CloudAuthGate = ({ children, authLoading }) => {
   const { user } = STATES || {};
 
   if (!user?.uid) {
-    console.log("🚫 CloudAuthGate: No authenticated user, showing Welcome");
+    console.log("🚫 CloudAuthGate: Not authenticated");
     return <Welcome />;
   }
 
-  console.log("✅ CloudAuthGate: User authenticated, rendering protected route");
+  console.log("✅ CloudAuthGate: Authenticated, rendering protected route");
   return children;
 };
 
@@ -344,11 +346,7 @@ const CloudRoutes = ({ user, authLoading }) => (
   <Routes>
     <Route path="/" element={<CloudLanding user={user} authLoading={authLoading} />} />
 
-    {/*
-      ALWAYS-REGISTERED CLOUD DASHBOARD ROUTES
-      These routes are ALWAYS defined to prevent 404s.
-      CloudAuthGate handles auth, showing Welcome if not logged in.
-    */}
+    {/* All dashboard routes ALWAYS registered */}
     <Route
       path="/dashboard/main"
       element={
@@ -385,7 +383,6 @@ const CloudRoutes = ({ user, authLoading }) => (
       }
     />
 
-    {/* Legacy dashboard */}
     <Route
       path="/dashboard/:dashID"
       element={
@@ -441,7 +438,7 @@ const CloudRoutes = ({ user, authLoading }) => (
       }
     />
 
-    {/* Cloud tools (non-marketplace) */}
+    {/* Cloud tools */}
     <Route
       path="/cloud/tools/nutrient-calculator"
       element={
@@ -497,7 +494,7 @@ const CloudRoutes = ({ user, authLoading }) => (
       }
     />
 
-    {/* Legacy features for backwards compatibility */}
+    {/* Legacy features */}
     <Route
       path="/features/nutrient-calculator"
       element={
@@ -543,10 +540,7 @@ const CloudRoutes = ({ user, authLoading }) => (
       }
     />
 
-    {/*
-      CRITICAL FIX: Catch-all redirects to CloudLanding instead of NotFound
-      This prevents 404s when accessing unknown routes in Cloud mode
-    */}
+    {/* Catch-all: redirect to CloudLanding instead of 404 */}
     <Route path="*" element={<CloudLanding user={user} authLoading={authLoading} />} />
   </Routes>
 );
@@ -559,7 +553,7 @@ const MarketplaceRoutes = ({ user, authLoading }) => (
   <Routes>
     <Route path="/" element={<MarketplaceLanding user={user} authLoading={authLoading} />} />
 
-    {/* Public marketplace routes */}
+    {/* Public routes */}
     <Route path="/marketplace" element={<Marketplace />} />
     <Route path="/marketplace/listing/:id" element={<ListingPage />} />
     <Route path="/recent-removals" element={<RecentRemoval />} />
@@ -575,22 +569,17 @@ const MarketplaceRoutes = ({ user, authLoading }) => (
         <Route path="/dashboard/seller" element={<SellerDashboard_Role />} />
         <Route path="/dashboard/installer" element={<InstallerDashboard />} />
 
-        {/* Marketplace tools */}
         <Route
           path="/marketplace/tools/calculator"
           element={<NutrientCalculator />}
         />
         <Route path="/marketplace/tools/live" element={<Livepeer />} />
-        <Route
-          path="/marketplace/tools/upload"
-          element={<Livepeer />}
-        />
+        <Route path="/marketplace/tools/upload" element={<Livepeer />} />
         <Route
           path="/marketplace/tools/verification"
           element={<VerificationUI />}
         />
 
-        {/* Account */}
         <Route
           path="/marketplace/seller-dashboard"
           element={<SellerDashboard />}

@@ -37,17 +37,8 @@ export const getDefaultDashboardRoute = (user, mode = "marketplace") => {
 
   /* ----------------------------- CLOUD MODE ----------------------------- */
   if (mode === "cloud") {
-    // Primary Cloud roles
-    if (role === "installer") return "/dashboard/installer";
-    if (role === "operator") return "/dashboard/main";
-    if (role === "admin") return "/dashboard/main";
-
-    // Sellers/Buyers shouldn't break Cloud; send them to main
-    if (role === "seller") return "/dashboard/main";
-    if (role === "buyer") return "/dashboard/main";
-    if (role === "farmer") return "/dashboard/main";
-
-    // Final fallback
+    // ALL authenticated users go to /dashboard/main in Cloud mode
+    // No role-based routing for Cloud (simplified for production)
     return "/dashboard/main";
   }
 
@@ -91,6 +82,11 @@ export const hasRouteAccess = (user, route) => {
   ];
   if (publicRoutes.some((r) => route.startsWith(r))) return true;
 
+  // Cloud routes: all authenticated users have access
+  if (route.startsWith("/dashboard/main")) return true;
+  if (route.startsWith("/cloud/")) return true;
+  if (route.startsWith("/features/")) return true;
+
   // Buyer-specific
   if (route.startsWith("/dashboard/buyer") && role === "buyer") return true;
 
@@ -103,11 +99,6 @@ export const hasRouteAccess = (user, route) => {
 
   // Installer
   if (route.startsWith("/dashboard/installer") && role === "installer")
-    return true;
-
-  // Cloud operator/admin dashboard
-  if (route.startsWith("/dashboard/main") &&
-      (role === "operator" || role === "admin"))
     return true;
 
   // Marketplace Seller Tools

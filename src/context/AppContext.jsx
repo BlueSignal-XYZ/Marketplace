@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../apis/firebase";
 import { UserAPI } from "../scripts/back_door";
 
 const AppContext = createContext();
@@ -6,7 +8,7 @@ const AppContext = createContext();
 export const AppProvider = ({ children }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true); // NEW: Track auth initialization
+  const [authLoading, setAuthLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
   const [routePath, setRoutePath] = useState("");
@@ -23,37 +25,71 @@ export const AppProvider = ({ children }) => {
   const [txPopupVisible, setTxPopupVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-
+  // Mobile detection
   useEffect(() => {
     const isMobileScreen = () => window.innerWidth <= 768;
     setIsMobile(isMobileScreen());
-    window.addEventListener("resize", () => setIsMobile(isMobileScreen()));
-    return () =>
-      window.removeEventListener("resize", () => setIsMobile(isMobileScreen()));
+    const handler = () => setIsMobile(isMobileScreen());
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
   }, []);
 
-  // CRITICAL FIX: Initialize auth state on app load
+  // CRITICAL: Firebase Auth State Listener
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const loggedUser = JSON.parse(sessionStorage.getItem("user"));
-        const { uid } = loggedUser || {};
+    console.log("🔐 Setting up Firebase auth listener...");
 
-        if (uid) {
-          await updateUser(uid);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("🔐 Firebase auth state changed:", firebaseUser?.uid || "signed out");
+
+      if (firebaseUser) {
+        // User signed in - fetch full user data from backend
+        try {
+          const userdata = (await UserAPI.account.getUserFromUID(firebaseUser.uid))?.userdata;
+
+          if (userdata?.uid) {
+            sessionStorage.setItem("user", JSON.stringify(userdata));
+            setUser(userdata);
+            console.log("✅ User loaded:", userdata.uid, "| Role:", userdata.role || "none");
+          } else {
+            // Firebase user exists but not in backend - use Firebase data
+            const fallbackUser = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              role: "buyer", // default fallback
+            };
+            sessionStorage.setItem("user", JSON.stringify(fallbackUser));
+            setUser(fallbackUser);
+            console.log("⚠️ User loaded from Firebase (backend fallback):", fallbackUser.uid);
+          }
+        } catch (error) {
+          console.error("❌ Failed to fetch user data:", error);
+          // Still set Firebase user so they're not stuck
+          const fallbackUser = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            role: "buyer",
+          };
+          sessionStorage.setItem("user", JSON.stringify(fallbackUser));
+          setUser(fallbackUser);
         }
-      } catch (error) {
-        console.error("Auth initialization error:", error);
-      } finally {
-        // ALWAYS complete auth loading, even on error
-        setAuthLoading(false);
-        setIsLoading(false);
+      } else {
+        // User signed out
+        sessionStorage.removeItem("user");
+        setUser(null);
+        console.log("🚪 User signed out");
       }
-    };
 
-    initializeAuth();
+      setAuthLoading(false);
+      setIsLoading(false);
+    });
+
+    // Cleanup listener on unmount
+    return () => unsubscribe();
   }, []);
 
+  // Manual user update (for registration or profile edits)
   const updateUser = async (uid, _userdata = {}) => {
     try {
       var userdata;
@@ -65,15 +101,12 @@ export const AppProvider = ({ children }) => {
       if (userdata?.uid) {
         sessionStorage.setItem("user", JSON.stringify(userdata));
         setUser(userdata);
-        console.log("✅ User loaded:", userdata.uid, "Role:", userdata.role);
+        console.log("✅ User manually updated:", userdata.uid, "| Role:", userdata.role);
         return true;
       }
     } catch (error) {
       logNotification("error", error.message);
       console.error("❌ updateUser failed:", error);
-    } finally {
-      setAuthLoading(false);
-      setIsLoading(false);
     }
     return null;
   };
@@ -108,7 +141,7 @@ export const AppProvider = ({ children }) => {
 
   const APP = {
     STATES: {
-      authLoading,  // NEW: Expose auth loading state
+      authLoading,
       isLoading,
       isMobile,
       user,
@@ -130,6 +163,7 @@ export const AppProvider = ({ children }) => {
     ACTIONS: {
       setIsLoading,
       updateUser,
+      setUser, // ADDED: For direct user state updates (used by LoginForm)
       setSearchResults,
       setRoutePath,
       handleSidebar,
