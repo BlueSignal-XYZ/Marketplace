@@ -1,4 +1,10 @@
 // /src/App.jsx
+/**
+ * BRAND SEPARATION RULE:
+ * - Cloud mode: imports from src/components/cloud/ and shared components only
+ * - Marketplace mode: imports from src/wqt/ and shared components only
+ * - Shared components must be brand-neutral (no hardcoded branding)
+ */
 import "./App.css";
 import React from "react";
 import {
@@ -9,6 +15,8 @@ import {
   useNavigate,
 } from "react-router-dom";
 import styled from "styled-components";
+
+import { DemoBanner } from "./components/DemoBanner";
 
 import { CloudHeader } from "./components/navigation/CloudHeader";
 import { MarketplaceHeader } from "./components/navigation/MarketplaceHeader";
@@ -26,12 +34,13 @@ import {
 } from "./routes";
 
 import {
-  Registry,
-  RecentRemoval,
   CertificatePage,
-  Map,
   Presale,
 } from "./components/routes";
+
+import { RegistryPage } from "./wqt/pages/RegistryPage";
+import { RecentRemovalsPage } from "./wqt/pages/RecentRemovalsPage";
+import { MapPage } from "./wqt/pages/MapPage";
 
 import {
   NotificationBar,
@@ -173,6 +182,9 @@ function AppShell({ mode, user, authLoading }) {
 
   return (
     <AppContainer>
+      {/* DEMO MODE BANNER */}
+      <DemoBanner />
+
       {/* DEBUG VERSION BUBBLE */}
       <div
         style={{
@@ -587,10 +599,10 @@ const MarketplaceRoutes = ({ user, authLoading }) => (
     {/* Public routes */}
     <Route path="/marketplace" element={<Marketplace />} />
     <Route path="/marketplace/listing/:id" element={<ListingPage />} />
-    <Route path="/recent-removals" element={<RecentRemoval />} />
+    <Route path="/recent-removals" element={<RecentRemovalsPage />} />
     <Route path="/certificate/:id" element={<CertificatePage />} />
-    <Route path="/registry" element={<Registry />} />
-    <Route path="/map" element={<Map />} />
+    <Route path="/registry" element={<RegistryPage />} />
+    <Route path="/map" element={<MapPage />} />
     <Route path="/presale" element={<Presale />} />
 
     {/* Auth-gated marketplace */}
