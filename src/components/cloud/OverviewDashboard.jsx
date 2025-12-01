@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { Link } from "react-router-dom";
 import CloudPageLayout from "./CloudPageLayout";
 import CloudMockAPI, { getRelativeTime } from "../../services/cloudMockAPI";
+import { DemoHint } from "../DemoHint";
 
 const Grid = styled.div`
   display: grid;
@@ -387,7 +388,12 @@ export default function OverviewDashboard() {
 
   return (
     <CloudPageLayout
-      title="Overview"
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          Overview
+          <DemoHint screenName="cloud-dashboard" />
+        </div>
+      }
       subtitle="Monitor your BlueSignal fleet at a glance"
     >
       {/* CTA Button */}
