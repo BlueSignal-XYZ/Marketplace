@@ -2,7 +2,7 @@
 // This config is used exclusively by WQT authentication components
 
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 // WQT-specific Firebase configuration
@@ -20,6 +20,18 @@ const firebaseWqtConfig = {
 const wqtApp = initializeApp(firebaseWqtConfig, "wqt");
 const wqtDb = getDatabase(wqtApp);
 const wqtAuth = getAuth(wqtApp);
+
+// Set persistence to LOCAL to keep user signed in across browser sessions
+setPersistence(wqtAuth, browserLocalPersistence).catch((error) => {
+  console.error("Failed to set auth persistence:", error);
+});
+
+// Configure Google Auth Provider with proper settings
 const wqtGoogleProvider = new GoogleAuthProvider();
+wqtGoogleProvider.addScope('email');
+wqtGoogleProvider.addScope('profile');
+wqtGoogleProvider.setCustomParameters({
+  prompt: 'select_account' // Always show account selection
+});
 
 export { wqtAuth as auth, wqtDb as db, wqtGoogleProvider as googleProvider };

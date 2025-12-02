@@ -2,7 +2,7 @@
 // This config is used exclusively by Cloud authentication components
 
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 // Cloud-specific Firebase configuration
@@ -21,6 +21,18 @@ const firebaseCloudConfig = {
 const cloudApp = initializeApp(firebaseCloudConfig, "cloud");
 const cloudDb = getDatabase(cloudApp);
 const cloudAuth = getAuth(cloudApp);
+
+// Set persistence to LOCAL to keep user signed in across browser sessions
+setPersistence(cloudAuth, browserLocalPersistence).catch((error) => {
+  console.error("Failed to set auth persistence:", error);
+});
+
+// Configure Google Auth Provider with proper settings
 const cloudGoogleProvider = new GoogleAuthProvider();
+cloudGoogleProvider.addScope('email');
+cloudGoogleProvider.addScope('profile');
+cloudGoogleProvider.setCustomParameters({
+  prompt: 'select_account' // Always show account selection
+});
 
 export { cloudAuth as auth, cloudDb as db, cloudGoogleProvider as googleProvider };

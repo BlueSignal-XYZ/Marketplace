@@ -15,7 +15,12 @@ import {
 import { formVariant, loadingVariant } from "./motion_variants";
 
 /** #BACKEND */
-import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+} from "firebase/auth";
 
 /** FIREBASE AUTH */
 import { auth, googleProvider } from "../../../apis/firebase";
@@ -118,6 +123,22 @@ const RegisterForm = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Check for redirect result on mount (fallback auth flow)
+  useEffect(() => {
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          console.log("✅ Google redirect sign-up success:", result.user.uid);
+          await handleGoogleUserCreation(result.user);
+        }
+      } catch (err) {
+        console.error("Redirect result error:", err);
+      }
+    };
+    checkRedirectResult();
+  }, []);
+
   useEffect(() => {
     if (isSuccess && onSuccess) {
       const t = setTimeout(() => {
@@ -127,64 +148,85 @@ const RegisterForm = ({
     }
   }, [isSuccess, onSuccess]);
 
+  // Helper function to create user after Google auth
+  const handleGoogleUserCreation = async (user) => {
+    const newUser = {
+      uid: user.uid,
+      username: (user.displayName || user.email?.split("@")[0] || "user").toLowerCase().replace(/\s+/g, "_"),
+      email: user.email?.toLowerCase(),
+      displayName: user.displayName,
+      role: "farmer",
+      PIN: 123456,
+    };
+
+    console.log("RegisterForm → Google newUser:", newUser);
+
+    // Best-effort backend account creation
+    try {
+      const apiResult = await AccountAPI.create(newUser);
+      console.log("AccountAPI.create →", apiResult);
+    } catch (err) {
+      console.warn("AccountAPI.create failed (non-fatal):", err);
+    }
+
+    // Keep local user state in sync
+    let updatedOK = false;
+    if (updateUser) {
+      updatedOK = !!(await updateUser(null, newUser));
+    }
+    if (!updatedOK) {
+      try {
+        sessionStorage.setItem("user", JSON.stringify(newUser));
+      } catch (e) {
+        console.error("Failed to write sessionStorage user:", e);
+      }
+    }
+
+    setIsSuccess(true);
+  };
+
   const handleGoogleSignUp = async () => {
     setError("");
     setIsLoading(true);
 
     try {
-      console.log("🔐 Google sign-up attempt...");
+      console.log("🔐 Google sign-up attempt via popup...");
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
       console.log("✅ Google auth success:", user.uid);
-
-      // Create user account with Google data
-      const newUser = {
-        uid: user.uid,
-        username: (user.displayName || user.email?.split("@")[0] || "user").toLowerCase().replace(/\s+/g, "_"),
-        email: user.email?.toLowerCase(),
-        displayName: user.displayName,
-        role: "farmer",
-        PIN: 123456,
-      };
-
-      console.log("RegisterForm → Google newUser:", newUser);
-
-      // Best-effort backend account creation
-      try {
-        const apiResult = await AccountAPI.create(newUser);
-        console.log("AccountAPI.create →", apiResult);
-      } catch (err) {
-        console.warn("AccountAPI.create failed (non-fatal):", err);
-      }
-
-      // Keep local user state in sync
-      let updatedOK = false;
-      if (updateUser) {
-        updatedOK = !!(await updateUser(null, newUser));
-      }
-      if (!updatedOK) {
-        try {
-          sessionStorage.setItem("user", JSON.stringify(newUser));
-        } catch (e) {
-          console.error("Failed to write sessionStorage user:", e);
-        }
-      }
-
-      setIsSuccess(true);
+      await handleGoogleUserCreation(user);
     } catch (err) {
       console.error("❌ Google sign-up failed:", err);
 
       if (err.code === "auth/popup-closed-by-user") {
         console.log("User closed popup");
+        setIsLoading(false);
       } else if (err.code === "auth/popup-blocked") {
-        setError("Popup was blocked. Please allow popups and try again.");
+        // Fallback to redirect-based auth
+        console.log("🔄 Popup blocked, trying redirect...");
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          // Page will redirect, no need to handle success here
+        } catch (redirectErr) {
+          console.error("Redirect also failed:", redirectErr);
+          setError("Unable to sign up. Please try again.");
+          setIsLoading(false);
+        }
+      } else if (err.code === "auth/cancelled-popup-request") {
+        console.log("Popup request cancelled (duplicate)");
+        setIsLoading(false);
+      } else if (err.code === "auth/unauthorized-domain") {
+        console.error("Domain not authorized:", window.location.hostname);
+        setError("This domain is not authorized for sign-in. Please contact support.");
+        setIsLoading(false);
       } else if (err.code === "auth/account-exists-with-different-credential") {
         setError("An account already exists with this email. Try signing in instead.");
+        setIsLoading(false);
       } else {
         setError(err?.message || "Unable to sign up with Google. Please try again.");
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
   };
 

@@ -1,10 +1,12 @@
 // /src/routes/components/welcome/LoginForm.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth, googleProvider } from "../../../apis/firebase";
@@ -157,6 +159,22 @@ const LoginForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [notification, setNotification] = useState(null);
 
+  // Check for redirect result on component mount (fallback auth flow)
+  useEffect(() => {
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          console.log("✅ Google redirect login success:", result.user.uid);
+          // Auth listener in AppContext will handle the rest
+        }
+      } catch (err) {
+        console.error("Redirect result error:", err);
+      }
+    };
+    checkRedirectResult();
+  }, []);
+
   const handleError = (message) => {
     console.error("🔐 Login error:", message);
     setNotification({
@@ -229,7 +247,7 @@ const LoginForm = () => {
   const handleGoogleLogin = async () => {
     try {
       setSubmitting(true);
-      console.log("🔐 Google login attempt...");
+      console.log("🔐 Google login attempt via popup...");
 
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
@@ -245,12 +263,31 @@ const LoginForm = () => {
       if (err.code === "auth/popup-closed-by-user") {
         // User closed popup - don't show error
         console.log("User closed popup");
+        setSubmitting(false);
       } else if (err.code === "auth/popup-blocked") {
-        handleError("Popup was blocked. Please allow popups and try again.");
+        // Fallback to redirect-based auth
+        console.log("🔄 Popup blocked, trying redirect...");
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          // Page will redirect, no need to handle success here
+        } catch (redirectErr) {
+          console.error("Redirect also failed:", redirectErr);
+          handleError("Unable to sign in. Please try again.");
+          setSubmitting(false);
+        }
+      } else if (err.code === "auth/cancelled-popup-request") {
+        // Multiple popup requests - ignore
+        console.log("Popup request cancelled (duplicate)");
+        setSubmitting(false);
+      } else if (err.code === "auth/unauthorized-domain") {
+        // Domain not authorized in Firebase console
+        console.error("Domain not authorized:", window.location.hostname);
+        handleError("This domain is not authorized for sign-in. Please contact support.");
+        setSubmitting(false);
       } else {
         handleError(err?.message || "Unable to sign in with Google. Please try again.");
+        setSubmitting(false);
       }
-      setSubmitting(false);
     }
   };
 
