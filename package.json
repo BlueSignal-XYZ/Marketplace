@@ -8,7 +8,7 @@
     "build": "npm run build:wqt && npm run build:cloud",
     "preview": "vite preview",
     "build:wqt": "BUILD_TARGET=wqt vite build --outDir dist-wqt",
-    "build:cloud": "BUILD_TARGET=cloud vite build --outDir dist-cloud && mv dist-cloud/cloud.html dist-cloud/index.html 2>/dev/null || true",
+    "build:cloud": "BUILD_TARGET=cloud vite build --outDir dist-cloud && ([ -f dist-cloud/cloud.html ] && mv -fv dist-cloud/cloud.html dist-cloud/index.html || echo 'No cloud.html to rename')",
     "deploy:wqt": "npm run build:wqt && firebase deploy --only hosting:waterquality-trading",
     "deploy:cloud": "npm run build:cloud && firebase deploy --only hosting:cloud-bluesignal",
     "test": "vitest",
