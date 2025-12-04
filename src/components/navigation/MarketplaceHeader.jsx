@@ -75,7 +75,6 @@ const MenuButton = styled.button`
 
 export function MarketplaceHeader({ onMenuClick }) {
   const handleClick = () => {
-    console.log("[MarketplaceHeader] burger clicked");
     if (onMenuClick) onMenuClick();
   };
 

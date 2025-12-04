@@ -13,30 +13,54 @@ const Container = styled(motion.div)`
   width: 100vw;
   height: 100vh;
   text-align: center;
-  background-color: #f2f2f2;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: ${({ theme }) => theme.colors?.ui100 || "#f4f4f5"};
 `;
 
 const Title = styled.h1`
-  font-size: 4em;
-  margin-bottom: 20px;
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: ${({ theme }) => theme.colors?.ui900 || "#18181b"};
+
+  @media (max-width: 480px) {
+    font-size: 36px;
+  }
 `;
 
 const Description = styled.p`
-  font-size: 1.5em;
-  margin-bottom: 30px;
+  font-size: 18px;
+  margin-bottom: 32px;
+  color: ${({ theme }) => theme.colors?.ui600 || "#52525b"};
+  max-width: 400px;
+
+  @media (max-width: 480px) {
+    font-size: 16px;
+  }
 `;
 
 const Button = styled(Link)`
-  background-color: #007bff;
+  background-color: ${({ theme }) => theme.colors?.primary500 || "#1D7072"};
   color: white;
-  padding: 10px 20px;
-  border-radius: 4px;
+  padding: 12px 24px;
+  border-radius: ${({ theme }) => theme.borderRadius?.default || "12px"};
   text-decoration: none;
-  font-size: 1.2em;
-  transition: background-color 0.3s ease;
+  font-size: 16px;
+  font-weight: 600;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease-out;
 
   &:hover {
-    background-color: #0056b3;
+    background-color: ${({ theme }) => theme.colors?.primary600 || "#196061"};
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+
+  &:focus {
+    outline: 2px solid ${({ theme }) => theme.colors?.primary500 || "#1D7072"};
+    outline-offset: 2px;
   }
 `;
 

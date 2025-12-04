@@ -13,6 +13,20 @@ const Button = styled.button`
   width: ${(props) => (props.fullWidth ? "100%" : "auto")};
   transition: all 0.15s ease-out;
   border: none;
+
+  &:focus {
+    outline: 2px solid ${({ theme }) => theme.colors.primary500};
+    outline-offset: 2px;
+  }
+
+  &:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary500};
+    outline-offset: 2px;
+  }
 `;
 
 export const ButtonPrimary = styled(Button)`

@@ -7,9 +7,12 @@ import { faBars } from "@fortawesome/free-solid-svg-icons";
 import blueSignalLogo from "../../assets/bluesignal-logo.png";
 
 const HeaderOuter = styled.header`
+  position: sticky;
+  top: 0;
+  z-index: 50;
   width: 100%;
   border-bottom: 1px solid ${({ theme }) => theme.colors.ui200};
-  background: ${({ theme }) => theme.colors.bg};
+  background: ${({ theme }) => theme.colors.bg || "#ffffff"};
 `;
 
 const HeaderInner = styled.div`
@@ -17,10 +20,15 @@ const HeaderInner = styled.div`
   margin: 0 auto;
   padding: 0 20px;
 
-  height: 68px;
+  height: 64px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+
+  @media (min-width: 768px) {
+    height: 72px;
+  }
 
   @media (min-width: 1024px) {
     padding: 0 24px;
@@ -34,9 +42,17 @@ const LogoWrapper = styled.div`
 `;
 
 const LogoImg = styled.img`
-  max-height: 44px;
+  height: 40px;
   width: auto;
   display: block;
+
+  @media (min-width: 768px) {
+    height: 48px;
+  }
+
+  @media (min-width: 1024px) {
+    height: 56px;
+  }
 `;
 
 const MenuButton = styled.button`
