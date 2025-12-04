@@ -7,9 +7,12 @@ import { getDatabase } from "firebase/database";
 
 // Cloud-specific Firebase configuration
 // NOTE: Currently using same project as WQT. For production, replace with dedicated Cloud project.
+// IMPORTANT: authDomain must match the hosting domain for OAuth to work correctly.
+// Using cloud.bluesignal.xyz ensures the auth handler stays on the same origin,
+// avoiding cross-origin popup/redirect issues with Google OAuth.
 const firebaseCloudConfig = {
   apiKey: import.meta.env.VITE_CLOUD_FIREBASE_API_KEY || "AIzaSyAESUVCltG4kviQLIiiygIROJ7BKMMgvX8",
-  authDomain: import.meta.env.VITE_CLOUD_FIREBASE_AUTH_DOMAIN || "waterquality-trading.firebaseapp.com",
+  authDomain: import.meta.env.VITE_CLOUD_FIREBASE_AUTH_DOMAIN || "cloud.bluesignal.xyz",
   projectId: import.meta.env.VITE_CLOUD_FIREBASE_PROJECT_ID || "waterquality-trading",
   storageBucket: import.meta.env.VITE_CLOUD_FIREBASE_STORAGE_BUCKET || "waterquality-trading.firebasestorage.app",
   messagingSenderId: import.meta.env.VITE_CLOUD_FIREBASE_MESSAGING_SENDER_ID || "1006831487182",
