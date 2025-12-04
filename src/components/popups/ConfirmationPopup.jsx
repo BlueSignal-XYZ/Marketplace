@@ -110,19 +110,28 @@ const Dialog = styled(motion.div)`
 // Button Styles
 const Button = styled.button`
   padding: 10px 20px;
-  margin: 10px;
+  margin: 8px 4px;
   cursor: pointer;
   border: none;
-  border-radius: 4px;
+  border-radius: ${({ theme }) => theme.borderRadius?.default || "12px"};
   background-color: ${(props) =>
     props.primary ? props.theme.colors.primary500 : props.theme.colors.red500};
   display: flex;
   justify-content: center;
   color: white;
-  transition: 0.3s ease-in-out;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 44px;
+  transition: all 0.15s ease-out;
 
   &:hover {
-    scale: 1.05;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+
+  &:focus {
+    outline: 2px solid ${({ theme }) => theme.colors?.primary500 || "#1D7072"};
+    outline-offset: 2px;
   }
 `;
 

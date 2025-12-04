@@ -56,7 +56,8 @@ const Footer = styled.footer`
 
 const StyledNutrientCalculator = styled.div`
   .header-text {
-    width: 600px;
+    max-width: 600px;
+    width: 100%;
   }
 
   .form-section-wrapper {
@@ -70,19 +71,20 @@ const StyledNutrientCalculator = styled.div`
     display: flex;
     flex-direction: column;
     gap: 16px;
+    width: 100%;
 
     @media (min-width: 768px) {
       width: 250px;
+      min-width: 250px;
     }
     .form-section-inputs {
       display: flex;
-
+      flex-direction: column;
       gap: 8px;
+
       @media (min-width: 768px) {
         flex-direction: column;
       }
-    }
-    > div {
     }
   }
 `;

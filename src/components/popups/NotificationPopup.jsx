@@ -53,30 +53,46 @@ const Notification = () => {
   );
 };
 
-const COLORS = {
-  notification: "#729ABD",
-  alert: "#FFC107",
-  error: "#F44336",
+// Theme-compatible notification colors using theme tokens
+const getNotificationColor = (type, theme) => {
+  switch (type) {
+    case "success":
+    case "notification":
+      return theme?.colors?.primary500 || "#1D7072";
+    case "alert":
+    case "warning":
+      return "#F59E0B"; // amber-500
+    case "error":
+      return theme?.colors?.red500 || "#ef4444";
+    default:
+      return theme?.colors?.ui700 || "#3f3f46";
+  }
 };
 
 const Container = styled(motion.div)`
   position: fixed;
   bottom: 20px;
   right: 20px;
-  padding: 20px;
-  background-color: ${(props) => COLORS[props.type] || "#333"};
+  padding: 16px 20px;
+  background-color: ${({ type, theme }) => getNotificationColor(type, theme)};
   color: white;
-  border-radius: 8px;
+  border-radius: ${({ theme }) => theme?.borderRadius?.default || "12px"};
   box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-  font-size: 1rem;
+  font-size: 14px;
+  font-weight: 500;
   z-index: 9999;
   max-width: calc(100% - 40px);
-  
-  @media (max-width: 768px) {
-    font-size: 0.9rem;
-    padding: 15px;
-  }
+  display: flex;
+  align-items: center;
+  gap: 12px;
 
+  @media (max-width: 768px) {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    max-width: none;
+    padding: 14px 16px;
+  }
 `;
 
 export default Notification;

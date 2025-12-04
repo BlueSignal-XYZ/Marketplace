@@ -85,12 +85,12 @@ const CardTitle = styled.span`
   margin: 1rem;
   font-size: 1rem;
   font-style: normal;
-  font-family: "Work Sans";
   font-weight: 500;
+  color: ${({ theme }) => theme.colors?.ui900 || "#18181b"};
 `;
 
 const CardIcon = styled(FontAwesomeIcon)`
-  fill: #134b5f;
+  color: ${({ theme }) => theme.colors?.primary600 || "#196061"};
   width: auto;
   height: 80%;
   margin-right: 1rem;
