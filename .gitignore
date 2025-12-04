@@ -97,4 +97,4 @@ bower_components/
 *.crt
 *.key
 *.p12
-*.pfx
+*.pfx.firebase/*.cache
