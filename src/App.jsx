@@ -263,15 +263,42 @@ function AppShell({ mode, user, authLoading }) {
  */
 const CloudLanding = ({ user, authLoading }) => {
   const navigate = useNavigate();
+  const [redirectChecked, setRedirectChecked] = React.useState(false);
 
+  // Handle redirect result FIRST, before rendering Welcome
+  React.useEffect(() => {
+    const checkRedirectResult = async () => {
+      try {
+        const { getRedirectResult } = await import("firebase/auth");
+        const { auth } = await import("./apis/firebase");
+        const result = await getRedirectResult(auth);
+
+        if (result?.user) {
+          console.log("✅ CloudLanding: Google redirect auth success:", result.user.uid);
+          // Auth state will be updated by onAuthStateChanged listener
+          // Navigation will happen in the next useEffect when user is set
+        }
+      } catch (err) {
+        console.error("❌ CloudLanding: Redirect auth error:", err);
+      } finally {
+        setRedirectChecked(true);
+      }
+    };
+
+    checkRedirectResult();
+  }, []);
+
+  // Handle navigation after auth completes
   React.useEffect(() => {
     console.log("🚀 CloudLanding useEffect fired:", {
       user: user?.uid || "null",
       authLoading,
+      redirectChecked,
     });
 
-    if (authLoading) {
-      console.log("⏳ CloudLanding: Auth loading, waiting...");
+    // Wait for both auth loading AND redirect check to complete
+    if (authLoading || !redirectChecked) {
+      console.log("⏳ CloudLanding: Waiting for auth...", { authLoading, redirectChecked });
       return;
     }
 
@@ -282,9 +309,10 @@ const CloudLanding = ({ user, authLoading }) => {
     } else {
       console.log("❌ CloudLanding: No user, showing login");
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, redirectChecked, navigate]);
 
-  if (authLoading) {
+  // Show loading while checking auth or redirect
+  if (authLoading || !redirectChecked) {
     return (
       <LoadingContainer>
         <LoadingSpinner />
@@ -301,15 +329,41 @@ const CloudLanding = ({ user, authLoading }) => {
  */
 const MarketplaceLanding = ({ user, authLoading }) => {
   const navigate = useNavigate();
+  const [redirectChecked, setRedirectChecked] = React.useState(false);
 
+  // Handle redirect result FIRST, before rendering Welcome
+  React.useEffect(() => {
+    const checkRedirectResult = async () => {
+      try {
+        const { getRedirectResult } = await import("firebase/auth");
+        const { auth } = await import("./apis/firebase");
+        const result = await getRedirectResult(auth);
+
+        if (result?.user) {
+          console.log("✅ MarketplaceLanding: Google redirect auth success:", result.user.uid);
+          // Auth state will be updated by onAuthStateChanged listener
+        }
+      } catch (err) {
+        console.error("❌ MarketplaceLanding: Redirect auth error:", err);
+      } finally {
+        setRedirectChecked(true);
+      }
+    };
+
+    checkRedirectResult();
+  }, []);
+
+  // Handle navigation after auth completes
   React.useEffect(() => {
     console.log("🚀 MarketplaceLanding useEffect fired:", {
       user: user?.uid || "null",
       authLoading,
+      redirectChecked,
     });
 
-    if (authLoading) {
-      console.log("⏳ MarketplaceLanding: Auth loading, waiting...");
+    // Wait for both auth loading AND redirect check to complete
+    if (authLoading || !redirectChecked) {
+      console.log("⏳ MarketplaceLanding: Waiting for auth...", { authLoading, redirectChecked });
       return;
     }
 
@@ -320,9 +374,10 @@ const MarketplaceLanding = ({ user, authLoading }) => {
     } else {
       console.log("❌ MarketplaceLanding: No user, showing login");
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, redirectChecked, navigate]);
 
-  if (authLoading) {
+  // Show loading while checking auth or redirect
+  if (authLoading || !redirectChecked) {
     return (
       <LoadingContainer>
         <LoadingSpinner />
