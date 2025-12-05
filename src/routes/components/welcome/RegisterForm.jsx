@@ -22,6 +22,8 @@ import {
 
 /** FIREBASE AUTH */
 import { auth, googleProvider } from "../../../apis/firebase";
+import { getDefaultDashboardRoute } from "../../../utils/roleRouting";
+import { getAppMode } from "../../../utils/modeDetection";
 import { Input } from "../../../components/shared/input/Input";
 import FormSection from "../../../components/shared/FormSection/FormSection";
 import {
@@ -143,16 +145,16 @@ const RegisterForm = ({
 
       // Use popup auth - handles cross-origin via postMessage
       const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
+      const firebaseUser = result.user;
 
-      console.log("✅ Google auth success:", user.uid);
+      console.log("✅ Google auth success:", firebaseUser.uid);
 
       // Create user account with Google data
       const newUser = {
-        uid: user.uid,
-        username: (user.displayName || user.email?.split("@")[0] || "user").toLowerCase().replace(/\s+/g, "_"),
-        email: user.email?.toLowerCase(),
-        displayName: user.displayName,
+        uid: firebaseUser.uid,
+        username: (firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "user").toLowerCase().replace(/\s+/g, "_"),
+        email: firebaseUser.email?.toLowerCase(),
+        displayName: firebaseUser.displayName,
         role: "farmer",
         PIN: 123456,
       };
@@ -167,21 +169,20 @@ const RegisterForm = ({
         console.warn("AccountAPI.create failed (non-fatal):", err);
       }
 
-      // Keep local user state in sync
-      let updatedOK = false;
-      if (updateUser) {
-        updatedOK = !!(await updateUser(null, newUser));
-      }
-      if (!updatedOK) {
-        try {
-          sessionStorage.setItem("user", JSON.stringify(newUser));
-        } catch (e) {
-          console.error("Failed to write sessionStorage user:", e);
-        }
+      // Store in session immediately
+      try {
+        sessionStorage.setItem("user", JSON.stringify(newUser));
+      } catch (e) {
+        console.error("Failed to write sessionStorage user:", e);
       }
 
-      setIsSuccess(true);
-      // Note: AppContext onAuthStateChanged will handle redirect
+      // Navigate directly - don't wait for auth state listener chain
+      const mode = getAppMode();
+      const route = getDefaultDashboardRoute(newUser, mode);
+      console.log("🚀 Navigating to:", route);
+
+      // Use window.location for hard navigation to avoid React Router timing issues
+      window.location.href = route;
     } catch (err) {
       console.error("❌ Google sign-up failed:", err);
 

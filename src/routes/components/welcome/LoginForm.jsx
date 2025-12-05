@@ -8,6 +8,8 @@ import {
 } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth, googleProvider } from "../../../apis/firebase";
+import { getDefaultDashboardRoute } from "../../../utils/roleRouting";
+import { getAppMode } from "../../../utils/modeDetection";
 
 
 import Notification from "../../../components/popups/NotificationPopup";
@@ -237,12 +239,32 @@ const LoginForm = () => {
 
       // Use popup auth - handles cross-origin via postMessage
       const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
+      const firebaseUser = result.user;
 
-      console.log("✅ Google login success:", user.uid);
-      console.log("⏳ Waiting for auth listener to update context...");
+      console.log("✅ Google login success:", firebaseUser.uid);
 
-      // Auth listener will handle the rest
+      // Build user object for navigation
+      const userData = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        role: "buyer", // Default role for new users
+      };
+
+      // Store in session immediately
+      try {
+        sessionStorage.setItem("user", JSON.stringify(userData));
+      } catch (e) {
+        console.error("Failed to write sessionStorage:", e);
+      }
+
+      // Navigate directly - don't wait for auth state listener chain
+      const mode = getAppMode();
+      const route = getDefaultDashboardRoute(userData, mode);
+      console.log("🚀 Navigating to:", route);
+
+      // Use window.location for hard navigation to avoid React Router timing issues
+      window.location.href = route;
     } catch (err) {
       console.error("❌ Google login failed:", err);
       console.error("Error code:", err.code);
