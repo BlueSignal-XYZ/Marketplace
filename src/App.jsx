@@ -53,6 +53,8 @@ import {
   ListingPage,
 } from "./components/elements/marketplace";
 
+import CatalogPage from "./routes/marketplace/CatalogPage";
+
 import { Livepeer } from "./components/elements/livepeer";
 import { VerificationUI } from "./components/elements/contractUI";
 
@@ -589,6 +591,7 @@ const MarketplaceRoutes = ({ user, authLoading }) => (
     {/* Public routes */}
     <Route path="/marketplace" element={<Marketplace />} />
     <Route path="/marketplace/listing/:id" element={<ListingPage />} />
+    <Route path="/catalog" element={<CatalogPage />} />
     <Route path="/recent-removals" element={<RecentRemovalsPage />} />
     <Route path="/certificate/:id" element={<CertificatePage />} />
     <Route path="/registry" element={<RegistryPage />} />
