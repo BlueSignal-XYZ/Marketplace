@@ -19,7 +19,6 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
-  getRedirectResult,
 } from "firebase/auth";
 
 /** FIREBASE AUTH */
@@ -124,64 +123,8 @@ const RegisterForm = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Handle redirect result on page load (for Cloud mode OAuth)
-  useEffect(() => {
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result?.user) {
-          console.log("✅ Google redirect sign-up success:", result.user.uid);
-
-          // Create user account with Google data
-          const newUser = {
-            uid: result.user.uid,
-            username: (result.user.displayName || result.user.email?.split("@")[0] || "user")
-              .toLowerCase()
-              .replace(/\s+/g, "_"),
-            email: result.user.email?.toLowerCase(),
-            displayName: result.user.displayName,
-            role: "farmer",
-            PIN: 123456,
-          };
-
-          console.log("RegisterForm → Google redirect newUser:", newUser);
-
-          // Best-effort backend account creation
-          try {
-            const apiResult = await AccountAPI.create(newUser);
-            console.log("AccountAPI.create →", apiResult);
-          } catch (err) {
-            console.warn("AccountAPI.create failed (non-fatal):", err);
-          }
-
-          // Keep local user state in sync
-          let updatedOK = false;
-          if (updateUser) {
-            updatedOK = !!(await updateUser(null, newUser));
-          }
-          if (!updatedOK) {
-            try {
-              sessionStorage.setItem("user", JSON.stringify(newUser));
-            } catch (e) {
-              console.error("Failed to write sessionStorage user:", e);
-            }
-          }
-
-          setIsSuccess(true);
-          // Note: AppContext onAuthStateChanged will also fire and handle redirect
-        }
-      } catch (err) {
-        console.error("❌ Google redirect sign-up failed:", err);
-        if (err.code === "auth/unauthorized-domain") {
-          setError("This domain is not authorized for authentication. Please contact support.");
-        } else if (err.code !== "auth/popup-closed-by-user") {
-          setError(err?.message || "Unable to sign up with Google. Please try again.");
-        }
-      }
-    };
-
-    handleRedirectResult();
-  }, [updateUser]);
+  // NOTE: Redirect result handling is now done centrally in AppContext
+  // to ensure it's processed before any UI renders
 
   // Trigger onSuccess callback after success animation
   useEffect(() => {

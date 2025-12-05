@@ -1,12 +1,11 @@
 // /src/routes/components/welcome/LoginForm.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
-  getRedirectResult,
 } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth, googleProvider } from "../../../apis/firebase";
@@ -161,33 +160,8 @@ const LoginForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [notification, setNotification] = useState(null);
 
-  // Handle redirect result on page load (for Cloud mode OAuth)
-  useEffect(() => {
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result?.user) {
-          console.log("✅ Google redirect login success:", result.user.uid);
-          // Auth listener in AppContext will handle the rest
-        }
-      } catch (err) {
-        console.error("❌ Google redirect login failed:", err);
-        if (err.code === "auth/unauthorized-domain") {
-          setNotification({
-            type: "error",
-            message: "This domain is not authorized for authentication. Please contact support.",
-          });
-        } else if (err.code !== "auth/popup-closed-by-user") {
-          setNotification({
-            type: "error",
-            message: err?.message || "Unable to sign in with Google. Please try again.",
-          });
-        }
-      }
-    };
-
-    handleRedirectResult();
-  }, []);
+  // NOTE: Redirect result handling is now done centrally in AppContext
+  // to ensure it's processed before any UI renders
 
   const handleError = (message) => {
     console.error("🔐 Login error:", message);

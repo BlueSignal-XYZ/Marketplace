@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut, getRedirectResult } from "firebase/auth";
 import { auth } from "../apis/firebase";
 import { UserAPI } from "../scripts/back_door";
 
@@ -34,59 +34,111 @@ export const AppProvider = ({ children }) => {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  // CRITICAL: Firebase Auth State Listener
-  useEffect(() => {
-    console.log("🔐 Setting up Firebase auth listener...");
+  // Helper to load user data from Firebase user
+  const loadUserData = async (firebaseUser) => {
+    if (!firebaseUser) {
+      sessionStorage.removeItem("user");
+      setUser(null);
+      return null;
+    }
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("🔐 Firebase auth state changed:", firebaseUser?.uid || "signed out");
+    try {
+      const userdata = (await UserAPI.account.getUserFromUID(firebaseUser.uid))?.userdata;
 
-      if (firebaseUser) {
-        // User signed in - fetch full user data from backend
-        try {
-          const userdata = (await UserAPI.account.getUserFromUID(firebaseUser.uid))?.userdata;
-
-          if (userdata?.uid) {
-            sessionStorage.setItem("user", JSON.stringify(userdata));
-            setUser(userdata);
-            console.log("✅ User loaded:", userdata.uid, "| Role:", userdata.role || "none");
-          } else {
-            // Firebase user exists but not in backend - use Firebase data
-            const fallbackUser = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName,
-              role: "buyer", // default fallback
-            };
-            sessionStorage.setItem("user", JSON.stringify(fallbackUser));
-            setUser(fallbackUser);
-            console.log("⚠️ User loaded from Firebase (backend fallback):", fallbackUser.uid);
-          }
-        } catch (error) {
-          console.error("❌ Failed to fetch user data:", error);
-          // Still set Firebase user so they're not stuck
-          const fallbackUser = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            role: "buyer",
-          };
-          sessionStorage.setItem("user", JSON.stringify(fallbackUser));
-          setUser(fallbackUser);
-        }
+      if (userdata?.uid) {
+        sessionStorage.setItem("user", JSON.stringify(userdata));
+        setUser(userdata);
+        console.log("✅ User loaded:", userdata.uid, "| Role:", userdata.role || "none");
+        return userdata;
       } else {
-        // User signed out
-        sessionStorage.removeItem("user");
-        setUser(null);
-        console.log("🚪 User signed out");
+        // Firebase user exists but not in backend - use Firebase data
+        const fallbackUser = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          role: "buyer", // default fallback
+        };
+        sessionStorage.setItem("user", JSON.stringify(fallbackUser));
+        setUser(fallbackUser);
+        console.log("⚠️ User loaded from Firebase (backend fallback):", fallbackUser.uid);
+        return fallbackUser;
+      }
+    } catch (error) {
+      console.error("❌ Failed to fetch user data:", error);
+      // Still set Firebase user so they're not stuck
+      const fallbackUser = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        role: "buyer",
+      };
+      sessionStorage.setItem("user", JSON.stringify(fallbackUser));
+      setUser(fallbackUser);
+      return fallbackUser;
+    }
+  };
+
+  // CRITICAL: Firebase Auth Initialization
+  // Must check for redirect result BEFORE setting up onAuthStateChanged
+  // to prevent showing login page during redirect auth flow
+  useEffect(() => {
+    console.log("🔐 Initializing Firebase auth...");
+    let unsubscribe = null;
+
+    const initAuth = async () => {
+      // Step 1: Check for pending redirect result FIRST
+      // This is critical for signInWithRedirect to work properly
+      try {
+        console.log("🔄 Checking for redirect result...");
+        const redirectResult = await getRedirectResult(auth);
+
+        if (redirectResult?.user) {
+          console.log("✅ Redirect auth success:", redirectResult.user.uid);
+          await loadUserData(redirectResult.user);
+          setAuthLoading(false);
+          setIsLoading(false);
+
+          // Set up listener for future auth changes (logout, etc.)
+          unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            console.log("🔐 Auth state changed:", firebaseUser?.uid || "signed out");
+            if (!firebaseUser) {
+              sessionStorage.removeItem("user");
+              setUser(null);
+              console.log("🚪 User signed out");
+            }
+            // Don't re-load user data here - we already have it
+          });
+          return;
+        }
+      } catch (error) {
+        // Redirect errors are handled, but we continue to check auth state
+        console.log("🔄 No redirect result (or error):", error?.code || "none");
       }
 
-      setAuthLoading(false);
-      setIsLoading(false);
-    });
+      // Step 2: No redirect result - set up normal auth state listener
+      console.log("🔐 Setting up auth state listener...");
+      unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        console.log("🔐 Auth state changed:", firebaseUser?.uid || "signed out");
+
+        if (firebaseUser) {
+          await loadUserData(firebaseUser);
+        } else {
+          sessionStorage.removeItem("user");
+          setUser(null);
+          console.log("🚪 User signed out");
+        }
+
+        setAuthLoading(false);
+        setIsLoading(false);
+      });
+    };
+
+    initAuth();
 
     // Cleanup listener on unmount
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   // Manual user update (for registration or profile edits)
