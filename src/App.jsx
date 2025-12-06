@@ -31,6 +31,7 @@ import {
   Marketplace,
   NotFound,
   FinancialDashboard,
+  SalesCatalog,
 } from "./routes";
 
 import {
@@ -594,6 +595,7 @@ const MarketplaceRoutes = ({ user, authLoading }) => (
     <Route path="/registry" element={<RegistryPage />} />
     <Route path="/map" element={<MapPage />} />
     <Route path="/presale" element={<Presale />} />
+    <Route path="/sales-catalog" element={<SalesCatalog />} />
 
     {/* Auth-gated marketplace */}
     {user?.uid && (
