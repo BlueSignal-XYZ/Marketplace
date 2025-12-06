@@ -52,20 +52,24 @@ import {
   InstallationTab,
   MaintenanceTab,
   BomTab,
+  // Enhanced tabs
+  SpecsTab,
+  EnhancedBomTab,
+  EnhancedInstallationTab,
+  OperationsTab,
   BenchmarkView,
   ProductComparisonView,
 } from "./components";
 
-// Tab configuration
+// Tab configuration - Enhanced with new tabs
 const TABS = [
   { id: "overview", label: "Overview" },
+  { id: "specs", label: "Specs" },
   { id: "layout", label: "Layout" },
   { id: "wiring", label: "Wiring" },
   { id: "power", label: "Power" },
-  { id: "gpio", label: "GPIO" },
-  { id: "calibration", label: "Calibration" },
-  { id: "installation", label: "Install" },
-  { id: "maintenance", label: "Maintenance" },
+  { id: "install", label: "Install" },
+  { id: "ops", label: "Operations" },
   { id: "bom", label: "BOM" },
 ];
 
@@ -292,22 +296,20 @@ export default function BlueSignalConfigurator() {
     switch (activeTab) {
       case "overview":
         return <OverviewTab product={product} />;
+      case "specs":
+        return <SpecsTab product={product} />;
       case "layout":
         return <LayoutTab product={product} />;
       case "wiring":
         return <WiringTab product={product} />;
       case "power":
         return <PowerTab product={product} />;
-      case "gpio":
-        return <GpioTab product={product} />;
-      case "calibration":
-        return <CalibrationTab product={product} />;
-      case "installation":
-        return <InstallationTab product={product} />;
-      case "maintenance":
-        return <MaintenanceTab product={product} />;
+      case "install":
+        return <EnhancedInstallationTab product={product} />;
+      case "ops":
+        return <OperationsTab product={product} />;
       case "bom":
-        return <BomTab product={product} />;
+        return <EnhancedBomTab product={product} />;
       default:
         return <OverviewTab product={product} />;
     }
@@ -547,7 +549,7 @@ export default function BlueSignalConfigurator() {
 
             <KeyboardHint>
               <kbd>←</kbd><kbd>→</kbd> Navigate products |
-              <kbd>1</kbd>-<kbd>6</kbd> Switch tabs |
+              <kbd>1</kbd>-<kbd>8</kbd> Switch tabs |
               <kbd>C</kbd> Compare mode |
               <kbd>Esc</kbd> Exit
             </KeyboardHint>
