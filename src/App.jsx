@@ -58,6 +58,28 @@ import { VerificationUI } from "./components/elements/contractUI";
 import BlueSignalConfigurator from "./components/BlueSignalConfigurator";
 import EnclosurePage from "./components/BlueSignalConfigurator/EnclosurePage";
 
+// Sales management components
+import {
+  CustomerList,
+  CustomerForm,
+  OrderList,
+  OrderDetail,
+  SiteList,
+  SiteForm,
+  DeviceAllocation,
+} from "./components/sales";
+
+// Installer portal components
+import {
+  InstallerList,
+  InstallerAssignment,
+  CommissionWorkflow,
+  DeviceActivation,
+} from "./components/installer";
+
+// Admin components
+import { HubSpotSyncStatus } from "./components/admin";
+
 import {
   Notification,
   Confirmation,
@@ -462,6 +484,24 @@ const CloudRoutes = ({ user, authLoading }) => (
     />
 
     <Route
+      path="/cloud/commissioning/:commissionId"
+      element={
+        <CloudAuthGate authLoading={authLoading}>
+          <CommissionWorkflow />
+        </CloudAuthGate>
+      }
+    />
+
+    <Route
+      path="/cloud/commissioning/:commissionId/complete"
+      element={
+        <CloudAuthGate authLoading={authLoading}>
+          <DeviceActivation />
+        </CloudAuthGate>
+      }
+    />
+
+    <Route
       path="/cloud/alerts"
       element={
         <CloudAuthGate authLoading={authLoading}>
@@ -593,7 +633,7 @@ const CloudRoutes = ({ user, authLoading }) => (
 /**
  * SalesRoutes - Dedicated routes for sales.bluesignal.xyz
  * Clean, focused layout for hardware sales and configuration.
- * No authentication required - public product catalog.
+ * Includes quote management, customer CRM, and order processing.
  */
 const SalesRoutes = () => (
   <Routes>
@@ -605,6 +645,32 @@ const SalesRoutes = () => (
 
     {/* Enclosure details page */}
     <Route path="/enclosure" element={<EnclosurePage />} />
+
+    {/* Order management */}
+    <Route path="/orders" element={<OrderList />} />
+    <Route path="/orders/:orderId" element={<OrderDetail />} />
+    <Route path="/orders/:orderId/allocate" element={<DeviceAllocation />} />
+
+    {/* Customer management */}
+    <Route path="/customers" element={<CustomerList />} />
+    <Route path="/customers/new" element={<CustomerForm />} />
+    <Route path="/customers/:customerId" element={<CustomerForm />} />
+
+    {/* Site management */}
+    <Route path="/sites" element={<SiteList />} />
+    <Route path="/sites/new" element={<SiteForm />} />
+    <Route path="/sites/:siteId" element={<SiteForm />} />
+
+    {/* Installer management */}
+    <Route path="/installers" element={<InstallerList />} />
+    <Route path="/orders/:orderId/devices/:deviceId/assign" element={<InstallerAssignment />} />
+
+    {/* Commissioning workflow */}
+    <Route path="/commissions/:commissionId" element={<CommissionWorkflow />} />
+    <Route path="/commissions/:commissionId/complete" element={<DeviceActivation />} />
+
+    {/* Admin - HubSpot integration */}
+    <Route path="/admin/hubspot" element={<HubSpotSyncStatus />} />
 
     {/* Catch-all: redirect to configurator */}
     <Route path="*" element={<BlueSignalConfigurator />} />
