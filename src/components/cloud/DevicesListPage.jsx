@@ -4,6 +4,9 @@ import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import CloudPageLayout from "./CloudPageLayout";
 import CloudMockAPI, { getRelativeTime } from "../../services/cloudMockAPI";
+import DeviceService from "../../services/deviceService";
+import AddDeviceModal from "./AddDeviceModal";
+import { useAppContext } from "../../context/AppContext";
 
 const AddDeviceButton = styled.button`
   padding: 10px 20px;
@@ -166,6 +169,64 @@ const StatusPill = styled.span`
       : "#16a34a"};
 `;
 
+const LifecycleBadge = styled.span`
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: ${({ $lifecycle }) => {
+    switch ($lifecycle) {
+      case "inventory":
+        return "#e0f2fe";
+      case "allocated":
+        return "#fef3c7";
+      case "shipped":
+        return "#dbeafe";
+      case "delivered":
+        return "#d1fae5";
+      case "installed":
+        return "#cffafe";
+      case "commissioned":
+        return "#c7d2fe";
+      case "active":
+        return "#bbf7d0";
+      case "maintenance":
+        return "#fed7aa";
+      case "decommissioned":
+        return "#e5e7eb";
+      default:
+        return "#f3f4f6";
+    }
+  }};
+  color: ${({ $lifecycle }) => {
+    switch ($lifecycle) {
+      case "inventory":
+        return "#0369a1";
+      case "allocated":
+        return "#92400e";
+      case "shipped":
+        return "#1d4ed8";
+      case "delivered":
+        return "#047857";
+      case "installed":
+        return "#0891b2";
+      case "commissioned":
+        return "#4338ca";
+      case "active":
+        return "#15803d";
+      case "maintenance":
+        return "#c2410c";
+      case "decommissioned":
+        return "#4b5563";
+      default:
+        return "#6b7280";
+    }
+  }};
+`;
+
 const BatteryIndicator = styled.span`
   font-weight: 500;
   color: ${({ $level }) =>
@@ -214,12 +275,18 @@ const Skeleton = styled.div`
 
 export default function DevicesListPage() {
   const navigate = useNavigate();
+  const { STATES } = useAppContext();
+  const { user } = STATES;
+  const isAdmin = user?.role === "admin";
+
   const [devices, setDevices] = useState([]);
   const [filteredDevices, setFilteredDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [lifecycleFilter, setLifecycleFilter] = useState("all");
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     loadDevices();
@@ -227,18 +294,54 @@ export default function DevicesListPage() {
 
   useEffect(() => {
     applyFilters();
-  }, [searchQuery, statusFilter, typeFilter, devices]);
+  }, [searchQuery, statusFilter, typeFilter, lifecycleFilter, devices]);
 
   const loadDevices = async () => {
     setLoading(true);
     try {
-      const data = await CloudMockAPI.devices.getAll();
-      setDevices(data);
+      // Load from both mock API (for legacy devices) and Firebase (for new inventory)
+      const [mockDevices, firebaseDevices] = await Promise.all([
+        CloudMockAPI.devices.getAll(),
+        DeviceService.getAllDevices().catch(() => []),
+      ]);
+
+      // Merge devices, preferring Firebase data for duplicates
+      const deviceMap = new Map();
+
+      // Add mock devices first
+      mockDevices.forEach((d) => {
+        deviceMap.set(d.id, {
+          ...d,
+          lifecycle: d.lifecycle || "active", // Default for mock devices
+        });
+      });
+
+      // Add/override with Firebase devices
+      firebaseDevices.forEach((d) => {
+        deviceMap.set(d.id, {
+          ...d,
+          // Add display-friendly fields for new inventory devices
+          siteName: d.siteName || "Unassigned",
+          customer: d.customer || "-",
+          status: d.lifecycle === "active" ? "online" : "offline",
+          lastContact: d.updatedAt || d.createdAt,
+          batteryLevel: d.batteryLevel || 100,
+          gatewayId: d.id,
+          gatewayName: d.name || d.serialNumber,
+        });
+      });
+
+      setDevices(Array.from(deviceMap.values()));
     } catch (error) {
       console.error("Error loading devices:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle modal success - refresh device list
+  const handleAddDeviceSuccess = () => {
+    loadDevices();
   };
 
   const applyFilters = () => {
@@ -249,10 +352,12 @@ export default function DevicesListPage() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (d) =>
-          d.name.toLowerCase().includes(query) ||
-          d.siteName.toLowerCase().includes(query) ||
-          d.deviceType.toLowerCase().includes(query) ||
-          d.customer.toLowerCase().includes(query)
+          (d.name || "").toLowerCase().includes(query) ||
+          (d.siteName || "").toLowerCase().includes(query) ||
+          (d.deviceType || "").toLowerCase().includes(query) ||
+          (d.customer || "").toLowerCase().includes(query) ||
+          (d.serialNumber || "").toLowerCase().includes(query) ||
+          (d.sku || "").toLowerCase().includes(query)
       );
     }
 
@@ -266,6 +371,11 @@ export default function DevicesListPage() {
       filtered = filtered.filter((d) => d.deviceType === typeFilter);
     }
 
+    // Apply lifecycle filter
+    if (lifecycleFilter !== "all") {
+      filtered = filtered.filter((d) => d.lifecycle === lifecycleFilter);
+    }
+
     setFilteredDevices(filtered);
   };
 
@@ -275,7 +385,8 @@ export default function DevicesListPage() {
     return "online";
   };
 
-  const uniqueTypes = [...new Set(devices.map((d) => d.deviceType))];
+  const uniqueTypes = [...new Set(devices.map((d) => d.deviceType).filter(Boolean))];
+  const uniqueLifecycles = [...new Set(devices.map((d) => d.lifecycle).filter(Boolean))];
 
   if (loading) {
     return (
@@ -293,9 +404,11 @@ export default function DevicesListPage() {
       title="Devices"
       subtitle="Monitor and manage all deployed devices"
       actions={
-        <AddDeviceButton onClick={() => navigate("/cloud/devices/new")}>
-          + Add Device
-        </AddDeviceButton>
+        isAdmin && (
+          <AddDeviceButton onClick={() => setShowAddModal(true)}>
+            + Add Device
+          </AddDeviceButton>
+        )
       }
     >
       <Controls>
@@ -333,7 +446,7 @@ export default function DevicesListPage() {
         </Filters>
       </Controls>
 
-      {typeFilter === "all" && uniqueTypes.length > 1 && (
+      {uniqueTypes.length > 1 && (
         <Filters style={{ marginBottom: "16px" }}>
           <span style={{ fontSize: "13px", color: "#6b7280", marginRight: "8px" }}>
             Type:
@@ -356,6 +469,29 @@ export default function DevicesListPage() {
         </Filters>
       )}
 
+      {uniqueLifecycles.length > 1 && (
+        <Filters style={{ marginBottom: "16px" }}>
+          <span style={{ fontSize: "13px", color: "#6b7280", marginRight: "8px" }}>
+            Lifecycle:
+          </span>
+          <FilterChip
+            $active={lifecycleFilter === "all"}
+            onClick={() => setLifecycleFilter("all")}
+          >
+            All States
+          </FilterChip>
+          {uniqueLifecycles.map((lifecycle) => (
+            <FilterChip
+              key={lifecycle}
+              $active={lifecycleFilter === lifecycle}
+              onClick={() => setLifecycleFilter(lifecycle)}
+            >
+              {lifecycle}
+            </FilterChip>
+          ))}
+        </Filters>
+      )}
+
       <TableContainer>
         {filteredDevices.length === 0 ? (
           <EmptyState>
@@ -373,9 +509,9 @@ export default function DevicesListPage() {
                 <th>Device Name</th>
                 <th>Site / Customer</th>
                 <th>Type</th>
+                <th>Lifecycle</th>
                 <th>Status</th>
                 <th>Last Contact</th>
-                <th>Gateway</th>
                 <th>Battery</th>
               </tr>
             </thead>
@@ -384,18 +520,37 @@ export default function DevicesListPage() {
                 <tr key={device.id}>
                   <td>
                     <DeviceLink to={`/cloud/devices/${device.id}`}>
-                      {device.name}
+                      {device.name || device.serialNumber || device.id}
                     </DeviceLink>
+                    {device.serialNumber && device.name !== device.serialNumber && (
+                      <div style={{ fontSize: "11px", color: "#9ca3af" }}>
+                        {device.serialNumber}
+                      </div>
+                    )}
                   </td>
                   <td>
                     <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                      <span>{device.siteName}</span>
+                      <span>{device.siteName || "Unassigned"}</span>
                       <span style={{ fontSize: "12px", color: "#6b7280" }}>
-                        {device.customer}
+                        {device.customer || "-"}
                       </span>
                     </div>
                   </td>
-                  <td>{device.deviceType}</td>
+                  <td>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span>{device.deviceType || "-"}</span>
+                      {device.sku && (
+                        <span style={{ fontSize: "11px", color: "#9ca3af" }}>
+                          {device.sku}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <LifecycleBadge $lifecycle={device.lifecycle}>
+                      {device.lifecycle || "unknown"}
+                    </LifecycleBadge>
+                  </td>
                   <td>
                     <StatusPill $variant={getStatusVariant(device.status)}>
                       {device.status === "online"
@@ -406,27 +561,23 @@ export default function DevicesListPage() {
                     </StatusPill>
                   </td>
                   <td>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                      <span>{getRelativeTime(device.lastContact)}</span>
-                      <span
-                        style={{ fontSize: "11px", color: "#9ca3af" }}
-                        title={new Date(device.lastContact).toLocaleString()}
-                      >
-                        {new Date(device.lastContact).toLocaleString()}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ fontSize: "13px" }}>
-                      <div>{device.gatewayName}</div>
-                      <div style={{ fontSize: "11px", color: "#9ca3af" }}>
-                        {device.gatewayId}
+                    {device.lastContact ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <span>{getRelativeTime(device.lastContact)}</span>
+                        <span
+                          style={{ fontSize: "11px", color: "#9ca3af" }}
+                          title={new Date(device.lastContact).toLocaleString()}
+                        >
+                          {new Date(device.lastContact).toLocaleString()}
+                        </span>
                       </div>
-                    </div>
+                    ) : (
+                      <span style={{ color: "#9ca3af" }}>-</span>
+                    )}
                   </td>
                   <td>
-                    <BatteryIndicator $level={device.batteryLevel}>
-                      {device.batteryLevel}%
+                    <BatteryIndicator $level={device.batteryLevel || 0}>
+                      {device.batteryLevel != null ? `${device.batteryLevel}%` : "-"}
                     </BatteryIndicator>
                   </td>
                 </tr>
@@ -435,6 +586,12 @@ export default function DevicesListPage() {
           </Table>
         )}
       </TableContainer>
+
+      <AddDeviceModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={handleAddDeviceSuccess}
+      />
     </CloudPageLayout>
   );
 }
