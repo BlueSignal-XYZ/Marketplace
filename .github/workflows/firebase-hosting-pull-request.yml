@@ -12,11 +12,12 @@ jobs:
       checks: write   # Allows the Action to create and update check runs
     steps:
       - uses: actions/checkout@v4
-      - run: npm ci
+      - run: npm ci --force
       - run: npm run test:ci
       - run: npm run build
+      # Deploy preview to waterquality-trading project
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_NEPTUNECHAIN_NETWORK }}'
-          projectId: neptunechain-network
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_WATERQUALITY_TRADING }}'
+          projectId: waterquality-trading
