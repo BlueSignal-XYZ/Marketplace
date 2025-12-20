@@ -28,6 +28,19 @@ jobs:
       actions: read
 
     steps:
+      - name: Verify API key is configured
+        run: |
+          if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            echo "::error::ANTHROPIC_API_KEY secret is not set. Please add it to repository secrets."
+            echo "Go to: Settings → Secrets and variables → Actions → Repository secrets"
+            exit 1
+          fi
+          # Check if key has expected format (starts with sk-)
+          if [[ ! "${{ secrets.ANTHROPIC_API_KEY }}" == sk-* ]]; then
+            echo "::warning::ANTHROPIC_API_KEY may be invalid - expected format starting with 'sk-'"
+          fi
+          echo "✓ ANTHROPIC_API_KEY is configured"
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -39,6 +52,8 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          model: claude-sonnet-4-5-20250929
+          show_full_output: true
           additional_permissions: |
             actions: read
           prompt: |
@@ -49,4 +64,3 @@ jobs:
             - Security concerns
 
             Use the repository's CLAUDE.md for guidance on style and conventions.
-
