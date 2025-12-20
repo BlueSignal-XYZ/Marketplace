@@ -78,9 +78,10 @@ jobs:
               response_file="/tmp/response_${site_name}.txt"
               touch "$response_file"
 
-              HTTP_CODE=$(curl -s -o "$response_file" -w "%{http_code}" \
+              HTTP_CODE=$(curl -sL -o "$response_file" -w "%{http_code}" \
                 -X POST \
                 -H "Content-Type: application/json" \
+                -d '{}' \
                 "$hook_url" 2>&1)
 
               echo "HTTP Response Code: $HTTP_CODE"
