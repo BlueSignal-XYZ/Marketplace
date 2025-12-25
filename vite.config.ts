@@ -12,6 +12,7 @@ import react from "@vitejs/plugin-react";
 // These will be explicitly injected at build time to ensure they work
 // in all CI/CD environments (Cloudflare Pages, GitHub Actions, etc.)
 const VITE_ENV_VARS = [
+  // Firebase config
   'VITE_FIREBASE_API_KEY',
   'VITE_FIREBASE_AUTH_DOMAIN',
   'VITE_FIREBASE_PROJECT_ID',
@@ -19,9 +20,21 @@ const VITE_ENV_VARS = [
   'VITE_FIREBASE_MESSAGING_SENDER_ID',
   'VITE_FIREBASE_APP_ID',
   'VITE_FIREBASE_MEASUREMENT_ID',
+  'VITE_FIREBASE_DATABASE_URL',
+  // Third-party API keys
+  'VITE_ALCHEMY_API_KEY',
+  'VITE_GOOGLE_MAPS_API_KEY',
+  'VITE_LIVEPEER_API_KEY',
+  // Build metadata
   'VITE_BUILD_VERSION',
   'VITE_DEBUG',
 ];
+
+// Handle common typos/variations in env var names
+// Maps canonical name -> alternate name to check
+const ENV_VAR_ALIASES: Record<string, string> = {
+  'VITE_FIREBASE_MESSAGING_SENDER_ID': 'VITE_FIREBASE_MESSAGE_SENDER_ID',
+};
 
 export default defineConfig(({ mode }) => {
   const buildTarget = process.env.BUILD_TARGET;
@@ -33,8 +46,14 @@ export default defineConfig(({ mode }) => {
   // process.env takes precedence over .env files for CI/CD flexibility
   const resolvedEnv: Record<string, string | undefined> = { ...envFromFiles };
   VITE_ENV_VARS.forEach(key => {
+    // Check primary env var name
     if (process.env[key]) {
       resolvedEnv[key] = process.env[key];
+    }
+    // Check alias if primary not found (handles typos like MESSAGE vs MESSAGING)
+    else if (ENV_VAR_ALIASES[key] && process.env[ENV_VAR_ALIASES[key]]) {
+      resolvedEnv[key] = process.env[ENV_VAR_ALIASES[key]];
+      console.warn(`[vite.config] Using alias ${ENV_VAR_ALIASES[key]} for ${key}`);
     }
   });
 
