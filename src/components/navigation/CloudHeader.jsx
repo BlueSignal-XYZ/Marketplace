@@ -11,14 +11,17 @@ const HeaderOuter = styled.header`
   top: 0;
   z-index: 50;
   width: 100%;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.ui200};
-  background: ${({ theme }) => theme.colors.bg || "#ffffff"};
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 `;
 
 const HeaderInner = styled.div`
-  max-width: 1120px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 
   height: 64px;
   display: flex;
@@ -31,7 +34,7 @@ const HeaderInner = styled.div`
   }
 
   @media (min-width: 1024px) {
-    padding: 0 24px;
+    padding: 0 32px;
   }
 `;
 
@@ -42,41 +45,48 @@ const LogoWrapper = styled.div`
 `;
 
 const LogoImg = styled.img`
-  height: 40px;
+  height: 36px;
   width: auto;
   display: block;
+  transition: transform 0.2s ease-out;
+
+  &:hover {
+    transform: scale(1.02);
+  }
 
   @media (min-width: 768px) {
-    height: 48px;
+    height: 44px;
   }
 
   @media (min-width: 1024px) {
-    height: 56px;
+    height: 52px;
   }
 `;
 
 const MenuButton = styled.button`
   height: 44px;
   width: 44px;
-  border-radius: 8px;
-
-  background: none;
-  border: none;
+  border-radius: 12px;
+  background: transparent;
+  border: 1.5px solid transparent;
   padding: 0;
   cursor: pointer;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
-  color: ${({ theme }) => theme.colors.ui900};
-  font-size: 22px;
+  color: ${({ theme }) => theme.colors?.ui700 || "#374151"};
+  font-size: 20px;
   line-height: 1;
-  transition: all 0.15s ease-out;
+  transition: all 0.2s ease-out;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.primary500};
-    background: ${({ theme }) => theme.colors.ui50};
+    color: ${({ theme }) => theme.colors?.primary600 || "#196061"};
+    background: ${({ theme }) => theme.colors?.primary50 || "#E6F7F8"};
+    border-color: ${({ theme }) => theme.colors?.primary200 || "#8FDADB"};
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 `;
 

@@ -36,11 +36,13 @@ export const GlobalStyle = createGlobalStyle`
         --safe-area-left: ${safeAreaInsets.left};
 
         /* Mobile-first spacing scale */
-        --space-xs: 8px;
-        --space-sm: 12px;
+        --space-xs: 4px;
+        --space-sm: 8px;
         --space-md: 16px;
         --space-lg: 24px;
         --space-xl: 32px;
+        --space-2xl: 48px;
+        --space-3xl: 64px;
 
         /* Mobile-first font sizes */
         --font-xs: 12px;
@@ -50,6 +52,52 @@ export const GlobalStyle = createGlobalStyle`
         --font-xl: 20px;
         --font-2xl: 24px;
         --font-3xl: 30px;
+
+        /* Primary brand colors */
+        --color-primary-50: #E6F7F8;
+        --color-primary-100: #C0EAEB;
+        --color-primary-200: #8FDADB;
+        --color-primary-300: #5DC9CC;
+        --color-primary-400: #38BDBE;
+        --color-primary-500: #1D7072;
+        --color-primary-600: #196061;
+        --color-primary-700: #0F393A;
+
+        /* UI colors */
+        --color-ui-50: #FAFAFA;
+        --color-ui-100: #F4F5F7;
+        --color-ui-200: #E5E7EB;
+        --color-ui-300: #D1D5DB;
+        --color-ui-400: #9CA3AF;
+        --color-ui-500: #6B7280;
+        --color-ui-600: #4B5563;
+        --color-ui-700: #374151;
+        --color-ui-800: #1F2937;
+        --color-ui-900: #111827;
+
+        /* Semantic colors */
+        --color-success: #10B981;
+        --color-warning: #F59E0B;
+        --color-error: #EF4444;
+
+        /* Border radius */
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 24px;
+        --radius-full: 9999px;
+
+        /* Shadows */
+        --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        --shadow-glow: 0 0 20px rgba(29, 112, 114, 0.15);
+
+        /* Transitions */
+        --transition-fast: 0.15s ease-out;
+        --transition-base: 0.2s ease-out;
+        --transition-spring: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     * {
@@ -195,7 +243,111 @@ export const GlobalStyle = createGlobalStyle`
     }
 
     :focus-visible {
-        outline: 2px solid #3b82f6;
+        outline: 2px solid var(--color-primary-400);
         outline-offset: 2px;
+    }
+
+    /* Selection styling */
+    ::selection {
+        background: var(--color-primary-100);
+        color: var(--color-primary-700);
+    }
+
+    /* Custom scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--color-ui-100);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--color-ui-300);
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-ui-400);
+    }
+
+    /* Firefox scrollbar */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-ui-300) var(--color-ui-100);
+    }
+
+    /* Smooth page transitions */
+    .page-enter {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    .page-enter-active {
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    }
+
+    .page-exit {
+        opacity: 1;
+    }
+
+    .page-exit-active {
+        opacity: 0;
+        transition: opacity 0.15s ease-out;
+    }
+
+    /* Skeleton loading animation */
+    @keyframes shimmer {
+        0% {
+            background-position: -200% 0;
+        }
+        100% {
+            background-position: 200% 0;
+        }
+    }
+
+    .skeleton {
+        background: linear-gradient(
+            90deg,
+            var(--color-ui-100) 25%,
+            var(--color-ui-200) 50%,
+            var(--color-ui-100) 75%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: var(--radius-sm);
+    }
+
+    /* Fade in animation utility */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .fade-in {
+        animation: fadeIn 0.3s ease-out forwards;
+    }
+
+    /* Reduce motion for users who prefer it */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
     }
 `;

@@ -5,11 +5,15 @@ import styled from "styled-components";
 const Page = styled.main`
   width: 100%;
   min-height: calc(100vh - 72px);
-  padding: 24px 20px 48px;
+  padding: 32px 24px 64px;
   box-sizing: border-box;
-  background: ${({ theme }) => theme.colors?.bg || "#fafafa"};
+  background: linear-gradient(180deg, #FAFAFA 0%, #F4F5F7 100%);
 
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
+    padding: 20px 16px 48px;
+  }
+
+  @media (max-width: 480px) {
     padding: 16px 12px 40px;
   }
 `;
@@ -21,10 +25,10 @@ const Shell = styled.div`
 `;
 
 const Header = styled.div`
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 
-  @media (max-width: 600px) {
-    margin-bottom: 20px;
+  @media (max-width: 768px) {
+    margin-bottom: 24px;
   }
 `;
 
@@ -32,64 +36,79 @@ const TitleRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 8px;
+  gap: 20px;
 
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
+    gap: 16px;
   }
 `;
 
 const TitleBlock = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 `;
 
 const Title = styled.h1`
   margin: 0;
-  font-size: 28px;
+  font-size: 32px;
   line-height: 1.2;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors?.ui900 || "#0f172a"};
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  color: ${({ theme }) => theme.colors?.ui900 || "#111827"};
+  letter-spacing: -0.03em;
 
-  @media (max-width: 600px) {
-    font-size: 24px;
+  @media (max-width: 768px) {
+    font-size: 26px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 22px;
   }
 `;
 
 const Subtitle = styled.p`
   margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.colors?.ui600 || "#4b5563"};
+  font-size: 15px;
+  line-height: 1.6;
+  color: ${({ theme }) => theme.colors?.ui500 || "#6B7280"};
+  max-width: 600px;
 
-  @media (max-width: 600px) {
-    font-size: 13px;
+  @media (max-width: 480px) {
+    font-size: 14px;
   }
 `;
 
-const Breadcrumbs = styled.div`
+const Breadcrumbs = styled.nav`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   font-size: 13px;
-  color: ${({ theme }) => theme.colors?.ui500 || "#6b7280"};
-  margin-bottom: 12px;
+  color: ${({ theme }) => theme.colors?.ui500 || "#6B7280"};
+  margin-bottom: 16px;
 
   a {
-    color: ${({ theme }) => theme.colors?.primary600 || "#0284c7"};
+    color: ${({ theme }) => theme.colors?.primary600 || "#196061"};
     text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s ease-out;
 
     &:hover {
+      color: ${({ theme }) => theme.colors?.primary700 || "#0F393A"};
       text-decoration: underline;
     }
   }
 
   span.separator {
-    color: ${({ theme }) => theme.colors?.ui300 || "#d1d5db"};
+    color: ${({ theme }) => theme.colors?.ui300 || "#D1D5DB"};
+    font-size: 11px;
+  }
+
+  span.current {
+    color: ${({ theme }) => theme.colors?.ui700 || "#374151"};
+    font-weight: 500;
   }
 `;
 
@@ -98,6 +117,16 @@ const ActionBar = styled.div`
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    width: 100%;
+
+    > * {
+      flex: 1;
+      min-width: 140px;
+    }
+  }
 `;
 
 const Content = styled.div`
